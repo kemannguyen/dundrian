@@ -1,7 +1,10 @@
 <html>
   <head>
     <title>Dundrian</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
+    />
     <link rel="preconnect" href="https://fonts.gstatic.com" />
     <link
       href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;700&display=swap"
@@ -10,6 +13,12 @@
     <link rel="stylesheet" href="/styles.css" type="text/css" />
   </head>
   <body>
+    <div class="control">
+      <span>mouse scroll</span>
+      <input type="checkbox" id="scroll-check" checked />
+      <span>ctrl + , ctrl -</span>
+      <input type="checkbox" id="keyboard-check" checked />
+    </div>
     <div
       id="select-arrow"
       class="arrow-container"
@@ -21,7 +30,7 @@
     <div class="game-container"></div>
     <div class="player-info">
       <div>
-        <label for="player-name">Your Name</label>
+        <label class="player-name-t" for="player-name">Your Name</label>
         <input id="player-name" maxlength="10" type="text" />
       </div>
       <div>

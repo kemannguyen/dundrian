@@ -13,20 +13,16 @@ const playerColors = [
 
 function setPosition(i) {
   let slots = [
-    { x: 2, y: 6 },
-    { x: 16, y: 6 },
-    { x: 2, y: 10 },
-    { x: 16, y: 10 },
-    { x: 2, y: 14 },
-    { x: 16, y: 14 },
-    { x: 2, y: 18 },
-    { x: 16, y: 18 },
+    { x: 4, y: 6 },
+    { x: 20, y: 6 },
+    { x: 4, y: 10 },
+    { x: 20, y: 10 },
+    { x: 4, y: 14 },
+    { x: 20, y: 14 },
+    { x: 4, y: 18 },
+    { x: 20, y: 18 },
   ];
   return slots[i];
-}
-
-function createName() {
-  return "Keman";
 }
 
 (function () {
@@ -76,8 +72,8 @@ function createName() {
 
     //players[playerId].hp = selectionIndex;
 
-    selectionArrow.style.left = 48 * xPos - 180 + "px";
-    selectionArrow.style.top = -30 * yPos + "px";
+    selectionArrow.style.left = 48 * xPos - 281 + "px";
+    selectionArrow.style.top = -18 * yPos + "px";
     console.log(xPos, yPos);
     playerRef.set(players[playerId]);
     console.log(selectionArrow);
@@ -183,16 +179,16 @@ function createName() {
           console.log(setPosition(numberOfPlayers), numberOfPlayers);
           pos = setPosition(numberOfPlayers);
           selectionIndex = numberOfPlayers;
+          selectionArrow.style.left = 48 * pos.x - 281 + "px";
+          selectionArrow.style.top = -18 * pos.y + "px";
         })
         .then(() => {
-          const name = createName();
-
           playerRef.set({
             id: playerId,
-            name,
+            name: "player " + (selectionIndex + 1),
             hp: 20,
             diraction: "right",
-            color: "blue",
+            color: playerColors[selectionIndex],
             x: pos.x,
             y: pos.y,
             index: numberOfPlayers,
