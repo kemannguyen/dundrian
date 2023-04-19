@@ -15,12 +15,14 @@ body {
 }
 
 .game-container {
+  display: flex;
   position: relative;
-  width: 240px;
-  height: 208px;
+  width: 300px;
+  height: 300px;
   background: url(/images/) no-repeat no-repeat;
   transform: scale(3);
   image-rendering: pixelated;
+  color: #f000ff;
 }
 
 .player-info {
@@ -76,8 +78,8 @@ button:active {
 /* Characters */
 .grid-cell {
   position: absolute;
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
 }
 .Character {
   transition: transform 0.4s;
@@ -88,7 +90,7 @@ button:active {
 .Character.you .Character_you-arrow {
   display: block;
 }
-.Character_you-arrow {
+/* .Character_you-arrow {
   display: none;
   position: absolute;
   top: -18px;
@@ -96,6 +98,18 @@ button:active {
   width: 7px;
   height: 5px;
   background: url(/images/arrow.png) no-repeat no-repeat;
+} */
+.arrow-container {
+  width: 100px;
+  height: 100px;
+}
+.Select-arrow {
+  display: block;
+  transform: scale(4);
+  width: 7px;
+  height: 5px;
+  background: url(/images/arrow.png) no-repeat no-repeat;
+  z-index: 20;
 }
 .Character_sprite {
   overflow: hidden;
@@ -106,19 +120,25 @@ button:active {
   background-position-x: 16px;
 }
 .Character[data-color="red"] .Character_sprite {
-  background-position-y: -16px;
+  background-color: red;
 }
 .Character[data-color="orange"] .Character_sprite {
-  background-position-y: -32px;
+  background-color: rgb(210, 147, 28);
 }
 .Character[data-color="yellow"] .Character_sprite {
-  background-position-y: -48px;
+  background-color: rgb(192, 192, 30);
 }
 .Character[data-color="green"] .Character_sprite {
-  background-position-y: -64px;
+  background-color: rgb(50, 164, 15);
 }
 .Character[data-color="purple"] .Character_sprite {
-  background-position-y: -80px;
+  background-color: rgba(209, 35, 212, 0.562);
+}
+.Character[data-color="pink"] .Character_sprite {
+  background-color: rgb(250, 150, 244);
+}
+.Character[data-color="gray"] .Character_sprite {
+  background-color: rgba(110, 110, 110, 0.562);
 }
 .Character_shadow {
   background: url(/images/shadow.png) no-repeat no-repeat;
