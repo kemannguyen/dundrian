@@ -151,6 +151,7 @@ function setPosition(i) {
     });
 
     allPlayersRef.on("child_added", (snapshot) => {
+      console.log("player joined");
       //runs when a new node is added to the tree in the DATABASE
       const addedPlayer = snapshot.val();
       const characterElement = document.createElement("div");
@@ -178,7 +179,6 @@ function setPosition(i) {
       characterElement.setAttribute("data-direction", addedPlayer.direction);
       const left = 16 * addedPlayer.x + "px";
       const top = 16 * addedPlayer.y - 4 + "px";
-      console.log(characterElement);
       gameContainer.appendChild(characterElement);
       numberOfPlayers++;
     });
@@ -225,21 +225,38 @@ function setPosition(i) {
       var ref = firebase.database().ref(`players`);
       var ref2 = firebase.database().ref(`players`);
 
+      let smallestIndex = 1000;
       //find lowest open index
-      let creationIndex = 0;
-
+      let creationIndexArr = [0, 1, 2, 3, 4, 5, 6, 7];
+      let creationIndex;
       var query = firebase.database().ref(`players/`).orderByKey();
-      query.once("value", function (snapshot) {
-        snapshot.forEach(function (childSnapshot) {
-          var key = childSnapshot.key;
-          var childIndex = childSnapshot.child("index").val();
-          if (childIndex == creationIndex) {
-            creationIndex++;
-          }
-        });
-        console.log("createIndex", creationIndex);
-      });
+      query
+        .once("value", function (snapshot) {
+          snapshot.forEach(function (childSnapshot) {
+            var key = childSnapshot.key;
+            var childIndex = childSnapshot.child("index").val();
 
+            console.log(key);
+            console.log(childIndex, creationIndex);
+            creationIndexArr[childIndex] = 100;
+            //   if (childIndex == creationIndex) {
+            //     console.log(childIndex, creationIndex);
+            //     creationIndex++;
+            //   }
+          });
+        })
+        .then(function () {
+          for (let i = 7; i >= 0; i--) {
+            if (smallestIndex > creationIndexArr[i]) {
+              smallestIndex = creationIndexArr[i];
+              console.log("smallest", smallestIndex);
+            }
+          }
+          console.log("2");
+          creationIndex = smallestIndex;
+        });
+
+      //creates new player in DB
       ref.once("value").then(function (snapshot) {
         numberOfPlayers = snapshot.numChildren();
         if (numberOfPlayers < MAX_PLAYERS) {
@@ -247,7 +264,6 @@ function setPosition(i) {
             .once("value")
             .then(function (snapshot) {
               numberOfPlayers = snapshot.numChildren();
-              console.log(setPosition(creationIndex), numberOfPlayers);
 
               pos = setPosition(creationIndex + 1);
               selectionIndex = creationIndex;
