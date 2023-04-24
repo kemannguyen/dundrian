@@ -77,7 +77,7 @@ function setPosition(i) {
       }
     }
     if (xChange == -1) {
-      if (selectionIndex >= 1 && selectionIndex < 4) {
+      if (selectionIndex >= 1 && selectionIndex <= 4) {
         selectionIndex = oldSelectIndex;
       } else if (selectionIndex == 0) {
         selectionIndex = 1;
@@ -86,7 +86,7 @@ function setPosition(i) {
       }
     }
     if (xChange == 1) {
-      if (selectionIndex >= 1 && selectionIndex < 4) {
+      if (selectionIndex >= 1 && selectionIndex <= 4) {
         selectionIndex = 0;
       } else if (selectionIndex == 0) {
         if (numberOfPlayers > 4) {
@@ -162,7 +162,8 @@ function setPosition(i) {
 
       characterElement.innerHTML = `
         <div class="Character_shadow grid-cell"></div>
-        <div class="Character_sprite grid-cell"></div>
+        <div class="Character_sprite grid-cell">
+        <img class="img_player" src="images/avatar.gif"></div>
         <div class="Character_name-container">
           <span class="Character_name"></span>
           <span class="Character_hp">0</span>
@@ -225,8 +226,9 @@ function setPosition(i) {
       var ref = firebase.database().ref(`players`);
       var ref2 = firebase.database().ref(`players`);
 
-      let smallestIndex = 1000;
       //find lowest open index
+      let smallestIndex = 1000;
+
       let creationIndexArr = [0, 1, 2, 3, 4, 5, 6, 7];
       let creationIndex;
       var query = firebase.database().ref(`players/`).orderByKey();
@@ -239,10 +241,6 @@ function setPosition(i) {
             console.log(key);
             console.log(childIndex, creationIndex);
             creationIndexArr[childIndex] = 100;
-            //   if (childIndex == creationIndex) {
-            //     console.log(childIndex, creationIndex);
-            //     creationIndex++;
-            //   }
           });
         })
         .then(function () {

@@ -21,7 +21,20 @@
     >
       <div class="Select-arrow"></div>
     </div>
-    <div class="game-container"></div>
+    <div class="game-container">
+      <button id="attack-btn" style="margin-top: auto" class="game_btn">
+        Attack
+      </button>
+      <button id="heal-btn" style="margin-top: auto" class="game_btn">
+        Heal
+      </button>
+      <button id="boss-heal-btn" style="margin-top: auto" class="game_btn">
+        Boss Heal
+      </button>
+      <button id="parry-btn" style="margin-top: auto" class="game_btn">
+        Parry
+      </button>
+    </div>
     <div class="player-info">
       <div>
         <label class="player-name-t" for="player-name">Your Name</label>
@@ -31,7 +44,16 @@
         <!-- <button id="player-color">Change Color</button> -->
         <button id="player-name-btn">Change Name</button>
       </div>
+      <div class="instruction-arrow-container">
+        <div class="Select-arrow"></div>
+      </div>
+      <label class="instruction-text">Player selection</label>
+      <div class="instruction-arrow-container">
+        <div class="Select-arrow-dragon"></div>
+      </div>
+      <label class="instruction-text">Dundrian selection</label>
     </div>
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
