@@ -3,6 +3,7 @@ function getKeyString(x, y) {}
 const MAX_PLAYERS = 8;
 const arrowXOffset = 480;
 const arrowYOffset = -440;
+let numberOfPlayers = 0;
 
 const playerColors = [
   "blue",
@@ -17,6 +18,7 @@ const playerColors = [
 
 function setPosition(i) {
   let slots = [
+    { x: 15, y: 9.75 },
     { x: 5, y: 6 },
     { x: 5, y: 8.5 },
     { x: 5, y: 11 },
@@ -32,7 +34,6 @@ function setPosition(i) {
 (function () {
   let playerId;
   let playerRef;
-  let numberOfPlayers;
   //character info for dom
   let players = {};
 
@@ -47,28 +48,59 @@ function setPosition(i) {
 
   const gameContainer = document.querySelector(".game-container");
   const playerNameInput = document.querySelector("#player-name");
-
+  let oldSelectIndex;
   function handleArrowPress(xChange = 0, yChange = 0) {
-    console.log(selectionArrow);
+    oldSelectIndex = selectionIndex;
+    console.log(oldSelectIndex);
     if (yChange == -1) {
       selectionIndex -= 1;
+
+      //skips dragon (index 0)
+      if (selectionIndex == 0 && oldSelectIndex == 1) {
+        console.log("w");
+        selectionIndex -= 1;
+      }
+      //   if(selectionIndex == -1){
+      //     selectionIndex
+      //   }
     }
     if (yChange == 1) {
       selectionIndex += 1;
+
+      //skips dragon (index 0)
+      if (selectionIndex > numberOfPlayers) {
+        selectionIndex = selectionIndex % (numberOfPlayers + 1);
+      }
+      if (selectionIndex == 0 && oldSelectIndex == numberOfPlayers) {
+        console.log("Q");
+        selectionIndex += 1;
+      }
     }
     if (xChange == -1) {
-      selectionIndex -= 4;
+      if (selectionIndex >= 1 && selectionIndex < 4) {
+        selectionIndex = oldSelectIndex;
+      } else if (selectionIndex == 0) {
+        selectionIndex = 1;
+      } else {
+        selectionIndex = 0;
+      }
     }
     if (xChange == 1) {
-      selectionIndex += 4;
+      if (selectionIndex >= 1 && selectionIndex < 4) {
+        selectionIndex = 0;
+      } else if (selectionIndex == 0) {
+        if (numberOfPlayers > 4) {
+          selectionIndex = 5;
+        }
+      }
     }
 
-    selectionIndex = selectionIndex % numberOfPlayers;
+    selectionIndex = selectionIndex % (numberOfPlayers + 1);
     if (selectionIndex == -0) {
-      selectionIndex = 0;
+      //selectionIndex = 0;
     }
     if (selectionIndex < 0) {
-      selectionIndex *= -1;
+      selectionIndex = numberOfPlayers;
     }
     console.log("index", selectionIndex);
 
@@ -156,6 +188,9 @@ function setPosition(i) {
       const removedKey = snapshot.val().id;
       gameContainer.removeChild(playerElements[removedKey]);
       delete playerElements[removedKey];
+      numberOfPlayers--;
+
+      //updates existing players
     });
 
     //Updates player name with text input
@@ -190,6 +225,21 @@ function setPosition(i) {
       var ref = firebase.database().ref(`players`);
       var ref2 = firebase.database().ref(`players`);
 
+      //find lowest open index
+      let creationIndex = 0;
+
+      var query = firebase.database().ref(`players/`).orderByKey();
+      query.once("value", function (snapshot) {
+        snapshot.forEach(function (childSnapshot) {
+          var key = childSnapshot.key;
+          var childIndex = childSnapshot.child("index").val();
+          if (childIndex == creationIndex) {
+            creationIndex++;
+          }
+        });
+        console.log("createIndex", creationIndex);
+      });
+
       ref.once("value").then(function (snapshot) {
         numberOfPlayers = snapshot.numChildren();
         if (numberOfPlayers < MAX_PLAYERS) {
@@ -197,9 +247,10 @@ function setPosition(i) {
             .once("value")
             .then(function (snapshot) {
               numberOfPlayers = snapshot.numChildren();
-              console.log(setPosition(numberOfPlayers), numberOfPlayers);
-              pos = setPosition(numberOfPlayers);
-              selectionIndex = numberOfPlayers;
+              console.log(setPosition(creationIndex), numberOfPlayers);
+
+              pos = setPosition(creationIndex + 1);
+              selectionIndex = creationIndex;
               selectionArrow.style.left = 48 * pos.x - arrowXOffset + "px";
               selectionArrow.style.top = 48 * pos.y + arrowYOffset + "px";
             })
@@ -207,13 +258,13 @@ function setPosition(i) {
               //visuals
               playerRef.set({
                 id: playerId,
-                name: "player " + (selectionIndex + 1),
+                name: "player " + (creationIndex + 1),
                 hp: 20,
                 diraction: "right",
-                color: playerColors[selectionIndex],
+                color: playerColors[creationIndex],
                 x: pos.x,
                 y: pos.y,
-                index: numberOfPlayers,
+                index: creationIndex,
               });
             });
 
