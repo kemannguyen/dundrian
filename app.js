@@ -13,19 +13,20 @@ const playerColors = [
 
 function setPosition(i) {
   let slots = [
-    { x: 4, y: 6 },
-    { x: 20, y: 6 },
-    { x: 4, y: 10 },
-    { x: 20, y: 10 },
-    { x: 4, y: 14 },
-    { x: 20, y: 14 },
-    { x: 4, y: 18 },
-    { x: 20, y: 18 },
+    { x: 5, y: 6 },
+    { x: 25, y: 6 },
+    { x: 5, y: 10 },
+    { x: 25, y: 10 },
+    { x: 5, y: 14 },
+    { x: 25, y: 14 },
+    { x: 5, y: 18 },
+    { x: 25, y: 18 },
   ];
   return slots[i];
 }
 
 (function () {
+  let arrowOffset = 680;
   let playerId;
   let playerRef;
   let numberOfPlayers;
@@ -72,7 +73,7 @@ function setPosition(i) {
 
     //players[playerId].hp = selectionIndex;
 
-    selectionArrow.style.left = 48 * xPos - 281 + "px";
+    selectionArrow.style.left = 48 * xPos - arrowOffset + "px";
     selectionArrow.style.top = -18 * yPos + "px";
     console.log(xPos, yPos);
     playerRef.set(players[playerId]);
@@ -179,7 +180,7 @@ function setPosition(i) {
           console.log(setPosition(numberOfPlayers), numberOfPlayers);
           pos = setPosition(numberOfPlayers);
           selectionIndex = numberOfPlayers;
-          selectionArrow.style.left = 48 * pos.x - 281 + "px";
+          selectionArrow.style.left = 48 * pos.x - arrowOffset + "px";
           selectionArrow.style.top = -18 * pos.y + "px";
         })
         .then(() => {
