@@ -1,5 +1,9 @@
 function getKeyString(x, y) {}
 
+const MAX_PLAYERS = 8;
+const arrowXOffset = 480;
+const arrowYOffset = -440;
+
 const playerColors = [
   "blue",
   "red",
@@ -14,25 +18,27 @@ const playerColors = [
 function setPosition(i) {
   let slots = [
     { x: 5, y: 6 },
+    { x: 5, y: 8.5 },
+    { x: 5, y: 11 },
+    { x: 5, y: 13.5 },
     { x: 25, y: 6 },
-    { x: 5, y: 10 },
-    { x: 25, y: 10 },
-    { x: 5, y: 14 },
-    { x: 25, y: 14 },
-    { x: 5, y: 18 },
-    { x: 25, y: 18 },
+    { x: 25, y: 8.5 },
+    { x: 25, y: 11 },
+    { x: 25, y: 13.5 },
   ];
   return slots[i];
 }
 
 (function () {
-  let arrowOffset = 680;
   let playerId;
   let playerRef;
   let numberOfPlayers;
   //character info for dom
   let players = {};
-  const playerColorButton = document.querySelector("#player-color");
+
+  //Button ref
+  //const playerColorButton = document.querySelector("#player-color");
+  const playerNameButton = document.querySelector("#player-name-btn");
 
   //dom elements
   let playerElements = {};
@@ -45,16 +51,16 @@ function setPosition(i) {
   function handleArrowPress(xChange = 0, yChange = 0) {
     console.log(selectionArrow);
     if (yChange == -1) {
-      selectionIndex -= 2;
-    }
-    if (yChange == 1) {
-      selectionIndex += 2;
-    }
-    if (xChange == -1) {
       selectionIndex -= 1;
     }
-    if (xChange == 1) {
+    if (yChange == 1) {
       selectionIndex += 1;
+    }
+    if (xChange == -1) {
+      selectionIndex -= 4;
+    }
+    if (xChange == 1) {
+      selectionIndex += 4;
     }
 
     selectionIndex = selectionIndex % numberOfPlayers;
@@ -73,8 +79,8 @@ function setPosition(i) {
 
     //players[playerId].hp = selectionIndex;
 
-    selectionArrow.style.left = 48 * xPos - arrowOffset + "px";
-    selectionArrow.style.top = -18 * yPos + "px";
+    selectionArrow.style.left = 48 * xPos - arrowXOffset + "px";
+    selectionArrow.style.top = 48 * yPos + arrowYOffset + "px";
     console.log(xPos, yPos);
     playerRef.set(players[playerId]);
     console.log(selectionArrow);
@@ -111,9 +117,9 @@ function setPosition(i) {
         el.style.transform = `translate3d(${left}, ${top}, 0)`;
       });
     });
-    Object.keys(players).forEach((key) => {});
+
     allPlayersRef.on("child_added", (snapshot) => {
-      //runs when a new node is added to the tree
+      //runs when a new node is added to the tree in the DATABASE
       const addedPlayer = snapshot.val();
       const characterElement = document.createElement("div");
       characterElement.classList.add("Character", "grid-cell");
@@ -145,6 +151,13 @@ function setPosition(i) {
       numberOfPlayers++;
     });
 
+    //Remove character DOM element after they leave
+    allPlayersRef.on("child_removed", (snapshot) => {
+      const removedKey = snapshot.val().id;
+      gameContainer.removeChild(playerElements[removedKey]);
+      delete playerElements[removedKey];
+    });
+
     //Updates player name with text input
     playerNameInput.addEventListener("change", (e) => {
       const newName = e.target.value || createName();
@@ -154,17 +167,18 @@ function setPosition(i) {
       });
     });
 
-    playerColorButton.addEventListener("click", () => {
-      const mySkinIndex = playerColors.indexOf(players[playerId].color);
-      const nextColor = playerColors[mySkinIndex + 1] || playerColors[0];
-      playerRef.update({
-        color: nextColor,
-      });
-    });
+    //changes color att button click
+    // playerNameButton.addEventListener("click", () => {
+    //   const mySkinIndex = playerColors.indexOf(players[playerId].color);
+    //   const nextColor = playerColors[mySkinIndex + 1] || playerColors[0];
+    //   playerRef.update({
+    //     color: nextColor,
+    //   });
+    // });
   }
 
   firebase.auth().onAuthStateChanged((user) => {
-    console.log(user);
+    console.log();
     if (user.uid) {
       //logged in
       playerId = user.uid;
@@ -172,36 +186,56 @@ function setPosition(i) {
       //find how many players there are in game
       var pos = { x: 0, y: 0 };
       playerRef = firebase.database().ref(`players/${playerId}`);
+
       var ref = firebase.database().ref(`players`);
-      ref
-        .once("value")
-        .then(function (snapshot) {
-          numberOfPlayers = snapshot.numChildren();
-          console.log(setPosition(numberOfPlayers), numberOfPlayers);
-          pos = setPosition(numberOfPlayers);
-          selectionIndex = numberOfPlayers;
-          selectionArrow.style.left = 48 * pos.x - arrowOffset + "px";
-          selectionArrow.style.top = -18 * pos.y + "px";
-        })
-        .then(() => {
-          playerRef.set({
-            id: playerId,
-            name: "player " + (selectionIndex + 1),
-            hp: 20,
-            diraction: "right",
-            color: playerColors[selectionIndex],
-            x: pos.x,
-            y: pos.y,
-            index: numberOfPlayers,
-          });
-        });
+      var ref2 = firebase.database().ref(`players`);
 
-      //leaves the game
-      playerRef.onDisconnect().remove();
+      ref.once("value").then(function (snapshot) {
+        numberOfPlayers = snapshot.numChildren();
+        if (numberOfPlayers < MAX_PLAYERS) {
+          ref2
+            .once("value")
+            .then(function (snapshot) {
+              numberOfPlayers = snapshot.numChildren();
+              console.log(setPosition(numberOfPlayers), numberOfPlayers);
+              pos = setPosition(numberOfPlayers);
+              selectionIndex = numberOfPlayers;
+              selectionArrow.style.left = 48 * pos.x - arrowXOffset + "px";
+              selectionArrow.style.top = 48 * pos.y + arrowYOffset + "px";
+            })
+            .then(() => {
+              //visuals
+              playerRef.set({
+                id: playerId,
+                name: "player " + (selectionIndex + 1),
+                hp: 20,
+                diraction: "right",
+                color: playerColors[selectionIndex],
+                x: pos.x,
+                y: pos.y,
+                index: numberOfPlayers,
+              });
+            });
 
-      initGame();
+          //leaves the game
+          playerRef.onDisconnect().remove();
+
+          initGame();
+        } else {
+          //when game is full
+          const characterElement = document.createElement("div");
+          characterElement.innerHTML = `
+        <div class="game-full-text">
+          <span class="Character_name">GAME IS FULL</span>
+        </div>
+      `;
+          gameContainer.appendChild(characterElement);
+          selectionArrow.style.opacity = 0;
+        }
+      });
     } else {
       //logged out
+      console.log(numberOfPlayers);
     }
   });
 

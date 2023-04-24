@@ -17,10 +17,12 @@ body {
 .game-container {
   display: flex;
   position: relative;
-  margin-left: -300;
-  margin-top: 200px;
+  margin-left: -100;
+  margin-top: 50px;
   width: 500px;
   height: 300px;
+  /* width: 30vw;
+  height: 12vw; */
   background: url(/images/cave.png) no-repeat no-repeat;
   transform: scale(3);
   image-rendering: auto;
@@ -55,7 +57,7 @@ button {
 
 input[type="text"] {
   outline: 0;
-  padding-left: 0.5em;
+  padding-left: 0.2em;
   border: 3px solid #222034;
   width: 150px;
   text-transform: uppercase;
@@ -115,6 +117,7 @@ button:active {
   height: 5px;
   background: url(/images/arrow.png) no-repeat no-repeat;
   z-index: 30 !important;
+  opacity: 1;
 }
 .Character_sprite {
   overflow: hidden;
@@ -156,6 +159,19 @@ button:active {
   top: -12px;
   left: -5px;
   font-size: 5px;
+  padding: 1px 2px 1px;
+  border-radius: 3px;
+  background: #333;
+  color: white;
+  font-weight: bold;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.game-full-text {
+  position: absolute;
+  top: 120px;
+  left: 140px;
+  font-size: 30px;
   padding: 1px 2px 1px;
   border-radius: 3px;
   background: #333;
