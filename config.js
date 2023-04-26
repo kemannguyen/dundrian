@@ -1,5 +1,3 @@
-require("dotenv").config();
-
 const firebaseConfig = {
   apiKey: process.env.API_KEY,
   authDomain: "dundrian-a472a.firebaseapp.com",
