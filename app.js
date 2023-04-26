@@ -273,20 +273,27 @@ function setPosition(i) {
 
       //adds new player click if its doenst exist
       setInterval(function () {
-        if (!playerClicks.includes(playerClick)) {
-          console.log(playerClick);
+        if (!playerClicks.includes(playerClick) && playerClick != null) {
+          console.log("playerclick", playerClick);
           playerClicks.push(playerClick);
         }
       }, 2000);
-
+      console.log(playerClicks.length);
       numberOfPlayers++;
     });
 
     //Remove character DOM element after they leave
     allPlayersRef.on("child_removed", (snapshot) => {
       const removedKey = snapshot.val().id;
+      console.log("snap", playerElements[removedKey]);
+      var index = playerClicks.indexOf(playerElements[removedKey]);
+      if (index > -1) {
+        playerClicks.splice(index, 1);
+      }
       gameContainer.removeChild(playerElements[removedKey]);
       delete playerElements[removedKey];
+      console.log("PC_L", playerClicks.length);
+      console.log("PC", playerClicks);
       numberOfPlayers--;
 
       //notify that player left
