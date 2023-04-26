@@ -166,7 +166,7 @@ button.game_btn {
 }
 .Character[data-color="blue"] .Character_sprite {
   margin-left: -5;
-  scale: 1.2;
+  scale: 1.8;
   filter: hue-rotate(0deg);
 }
 .Character[data-color="red"] .Character_sprite {

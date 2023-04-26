@@ -1,5 +1,5 @@
 const firebaseConfig = {
-  apiKey: process.env.API_KEY,
+  apiKey: "AIzaSyBBYKTtGF_zYp7KEARnIx8QvewDilyKHfQ",
   authDomain: "dundrian-a472a.firebaseapp.com",
   databaseURL:
     "https://dundrian-a472a-default-rtdb.europe-west1.firebasedatabase.app",

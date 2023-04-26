@@ -163,7 +163,7 @@ function setPosition(i) {
       characterElement.innerHTML = `
         <div class="Character_shadow grid-cell"></div>
         <div class="Character_sprite grid-cell">
-        <img class="img_player" src="images/avatar.gif"></div>
+        <img class="img_player" src="images/dundrian-ninja.gif"></div>
         <div class="Character_name-container">
           <span class="Character_name"></span>
           <span class="Character_hp">0</span>
