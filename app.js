@@ -1,8 +1,8 @@
 function getKeyString(x, y) {}
 
 const MAX_PLAYERS = 8;
-const arrowXOffset = 480;
-const arrowYOffset = -440;
+const arrowXOffset = 570;
+const arrowYOffset = -490;
 let numberOfPlayers = 0;
 
 const playerColors = [
@@ -18,7 +18,7 @@ const playerColors = [
 
 function setPosition(i) {
   let slots = [
-    { x: 15, y: 9.75 },
+    { x: 15, y: 4.75 },
     { x: 5, y: 6 },
     { x: 5, y: 8.5 },
     { x: 5, y: 11 },
@@ -39,7 +39,10 @@ function setPosition(i) {
 
   //Button ref
   //const playerColorButton = document.querySelector("#player-color");
-  const playerNameButton = document.querySelector("#player-name-btn");
+  let dragonClick;
+  let playerClick;
+  const notification = document.querySelector("#notification");
+  const notificationContent = document.querySelector("#notification-content");
 
   //dom elements
   let playerElements = {};
@@ -119,6 +122,7 @@ function setPosition(i) {
   }
 
   function initGame() {
+    let test = false;
     new KeyPressListener("ArrowUp", () => handleArrowPress(0, -1));
     new KeyPressListener("ArrowDown", () => handleArrowPress(0, 1));
     new KeyPressListener("ArrowLeft", () => handleArrowPress(-1, 0));
@@ -129,13 +133,69 @@ function setPosition(i) {
     new KeyPressListener("KeyD", () => handleArrowPress(-1, 0));
     new KeyPressListener("KeyA", () => handleArrowPress(1, 0));
 
+    const dragonRef = firebase.database().ref("dundrian");
     const allPlayersRef = firebase.database().ref("players");
-    const allCoinsRef = firebase.database().ref("index");
+    const dragonElement = document.createElement("div");
+    dragonElement.classList.add("Character", "grid-cell");
+    //DRAGON
 
+    dragonRef.on("value", (snapshot) => {
+      dragon = snapshot.val();
+      //like players
+      // Object.keys(dragon).forEach((key) => {
+      //   let el = dragonElements[0];
+      //   console.log("drag EL", el);
+      // });
+      const characterState = dragon;
+      let el = dragonElement;
+      const left = characterState.x + 200 + "px";
+      const top = characterState.y + 100 + "px";
+
+      el.setAttribute("data-direction", characterState.direction);
+      el.setAttribute("id", "dundrian");
+      el.style.transform = `translate3d(${left}, ${top}, 0)`;
+
+      //players[key]
+      console.log("dragon = players[key]", dragon);
+      //player el
+      console.log("dragonEL = player EL", dragonElement);
+      try {
+        el.querySelector(".Character_hp").innerText = characterState.hp;
+      } catch (e) {}
+    });
+
+    dragonElement.innerHTML = `
+        <div  class="grid-cell-dragon"></div>
+        <div class="Character_sprite grid-cell-dragon">
+        <img  class="img_dragon" src="images/dundrian-cultist.gif"></div>
+        <div class="Dragon_name-container">
+          <span class="Character_name"></span>
+          <span class="Character_hp">0</span>
+        </div>
+      `;
+
+    dragonElement.querySelector(".Character_name").innerText = dragon.name;
+    dragonElement.querySelector(".Character_hp").innerText = dragon.hp;
+    dragonElement.setAttribute("data-direction", dragon.direction);
+
+    gameContainer.appendChild(dragonElement);
+
+    dragonClick = document.querySelector("#dundrian");
     allPlayersRef.on("value", (snapshot) => {
-      //runs when a change occurs
+      //changes dragon hp based on players
+      if (numberOfPlayers == 4) {
+        dragonRef.child("/hp").set(40);
+      } else if (numberOfPlayers == 5) {
+        dragonRef.child("/hp").set(50);
+      } else if (numberOfPlayers > 5) {
+        dragonRef.child("/hp").set(75);
+      } else {
+        dragonRef.child("/hp").set(40);
+      }
 
+      //runs when a change occurs
       players = snapshot.val() || {};
+
       Object.keys(players).forEach((key) => {
         const characterState = players[key];
         let el = playerElements[key];
@@ -143,27 +203,27 @@ function setPosition(i) {
         el.querySelector(".Character_name").innerText = characterState.name;
         el.querySelector(".Character_hp").innerText = characterState.hp;
         el.setAttribute("data-color", characterState.color);
-        el.setAttribute("data-direction", characterState.direction);
+
         const left = 16 * characterState.x + "px";
         const top = 16 * characterState.y - 4 + "px";
+
         el.style.transform = `translate3d(${left}, ${top}, 0)`;
       });
     });
 
     allPlayersRef.on("child_added", (snapshot) => {
-      console.log("player joined");
       //runs when a new node is added to the tree in the DATABASE
       const addedPlayer = snapshot.val();
+      console.log("A_P = P_K", addedPlayer);
       const characterElement = document.createElement("div");
       characterElement.classList.add("Character", "grid-cell");
       if (addedPlayer.id == playerId) {
         characterElement.classList.add("you");
       }
-
       characterElement.innerHTML = `
         <div class="Character_shadow grid-cell"></div>
         <div class="Character_sprite grid-cell">
-        <img class="img_player" src="images/dundrian-ninja.gif"></div>
+        <img class="img_player" src="images/dundrian-normal-player.gif"></div>
         <div class="Character_name-container">
           <span class="Character_name"></span>
           <span class="Character_hp">0</span>
@@ -171,16 +231,45 @@ function setPosition(i) {
         <div class="Character_you-arrow"></div>
       `;
       playerElements[addedPlayer.id] = characterElement;
+      console.log("EL[A_P] = P_EL", playerElements[addedPlayer.id]);
 
       characterElement.querySelector(".Character_name").innerText =
         addedPlayer.name;
       characterElement.querySelector(".Character_hp").innerText =
         addedPlayer.hp;
       characterElement.setAttribute("data-color", addedPlayer.color);
-      characterElement.setAttribute("data-direction", addedPlayer.direction);
-      const left = 16 * addedPlayer.x + "px";
-      const top = 16 * addedPlayer.y - 4 + "px";
+      characterElement.setAttribute("id", addedPlayer.id);
+
+      //notify that player joined
+      notificationContent.innerHTML = addedPlayer.name + " joined";
+      notification.className = "notification-show";
+      setTimeout(function () {
+        notification.className = "notification-hide";
+      }, 2000);
+
       gameContainer.appendChild(characterElement);
+
+      //player click function
+      setInterval(function () {
+        playerClick = document.querySelector(`#${addedPlayer.id}`);
+      }, 500);
+
+      //selects the player and moves the arrow to the pressed one
+      setTimeout(function () {
+        if (playerClick != undefined) {
+          playerClick.addEventListener("click", (e) => {
+            console.log(e.currentTarget.style.transform);
+            Object.keys(players).forEach((key) => {
+              let el = playerElements[key];
+              if (e.currentTarget.style.transform == el.style.transform) {
+                const pos = setPosition(players[key].index + 1);
+                selectionArrow.style.left = 48 * pos.x - arrowXOffset + "px";
+                selectionArrow.style.top = 48 * pos.y + arrowYOffset + "px";
+              }
+            });
+          });
+        }
+      }, 1000);
       numberOfPlayers++;
     });
 
@@ -191,10 +280,18 @@ function setPosition(i) {
       delete playerElements[removedKey];
       numberOfPlayers--;
 
+      //notify that player left
+      notificationContent.innerHTML = snapshot.val().name + " left";
+
+      notification.className = "notification-show";
+      setTimeout(function () {
+        notification.className = "notification-hide";
+      }, 2000);
       //updates existing players
     });
 
     //Updates player name with text input
+
     playerNameInput.addEventListener("change", (e) => {
       const newName = e.target.value || createName();
       playerNameInput.value = newName;
@@ -204,13 +301,16 @@ function setPosition(i) {
     });
 
     //changes color att button click
-    // playerNameButton.addEventListener("click", () => {
-    //   const mySkinIndex = playerColors.indexOf(players[playerId].color);
-    //   const nextColor = playerColors[mySkinIndex + 1] || playerColors[0];
-    //   playerRef.update({
-    //     color: nextColor,
-    //   });
-    // });
+    dragonClick.addEventListener("click", (e) => {
+      //DRAGON LOGIC
+
+      //console.log(e.currentTarget);
+      //var tempElement = e.currentTarget;
+
+      const pos = setPosition(0);
+      selectionArrow.style.left = 48 * pos.x - arrowXOffset + "px";
+      selectionArrow.style.top = 48 * pos.y + arrowYOffset + "px";
+    });
   }
 
   firebase.auth().onAuthStateChanged((user) => {
@@ -218,6 +318,19 @@ function setPosition(i) {
     if (user.uid) {
       //logged in
       playerId = user.uid;
+
+      // //creates dundrian
+
+      var dpos = setPosition(0);
+      var rootRef = firebase.database().ref(`dundrian`);
+      var dragon = {
+        name: "dundrian",
+        hp: 40,
+        direction: "right",
+        x: dpos.x,
+        y: dpos.y,
+      };
+      rootRef.set(dragon);
 
       //find how many players there are in game
       var pos = { x: 0, y: 0 };
@@ -238,8 +351,6 @@ function setPosition(i) {
             var key = childSnapshot.key;
             var childIndex = childSnapshot.child("index").val();
 
-            console.log(key);
-            console.log(childIndex, creationIndex);
             creationIndexArr[childIndex] = 100;
           });
         })
@@ -247,10 +358,8 @@ function setPosition(i) {
           for (let i = 7; i >= 0; i--) {
             if (smallestIndex > creationIndexArr[i]) {
               smallestIndex = creationIndexArr[i];
-              console.log("smallest", smallestIndex);
             }
           }
-          console.log("2");
           creationIndex = smallestIndex;
         });
 
@@ -274,7 +383,6 @@ function setPosition(i) {
                 id: playerId,
                 name: "player " + (creationIndex + 1),
                 hp: 20,
-                diraction: "right",
                 color: playerColors[creationIndex],
                 x: pos.x,
                 y: pos.y,
