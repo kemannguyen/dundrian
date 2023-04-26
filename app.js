@@ -19,14 +19,14 @@ const playerColors = [
 function setPosition(i) {
   let slots = [
     { x: 15, y: 4.75 },
-    { x: 5, y: 6 },
+    { x: 7, y: 6 },
     { x: 5, y: 8.5 },
     { x: 5, y: 11 },
-    { x: 5, y: 13.5 },
-    { x: 25, y: 6 },
+    { x: 7, y: 13.5 },
+    { x: 23, y: 6 },
     { x: 25, y: 8.5 },
     { x: 25, y: 11 },
-    { x: 25, y: 13.5 },
+    { x: 23, y: 13.5 },
   ];
   return slots[i];
 }
