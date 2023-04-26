@@ -40,7 +40,7 @@ function setPosition(i) {
   //Button ref
   //const playerColorButton = document.querySelector("#player-color");
   let dragonClick;
-  let playerClick;
+  let playerClicks = [];
   const notification = document.querySelector("#notification");
   const notificationContent = document.querySelector("#notification-content");
 
@@ -248,11 +248,11 @@ function setPosition(i) {
       }, 2000);
 
       gameContainer.appendChild(characterElement);
-
+      let playerClick;
       //player click function
       setInterval(function () {
         playerClick = document.querySelector(`#${addedPlayer.id}`);
-      }, 500);
+      }, 200);
 
       //selects the player and moves the arrow to the pressed one
       setTimeout(function () {
@@ -270,6 +270,15 @@ function setPosition(i) {
           });
         }
       }, 1000);
+
+      //adds new player click if its doenst exist
+      setInterval(function () {
+        if (!playerClicks.includes(playerClick)) {
+          console.log(playerClick);
+          playerClicks.push(playerClick);
+        }
+      }, 2000);
+
       numberOfPlayers++;
     });
 
