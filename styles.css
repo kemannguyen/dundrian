@@ -120,12 +120,15 @@ button.game_btn {
   position: absolute;
   width: 30px;
   height: 30px;
+  cursor: pointer;
 }
 .grid-cell-dragon {
   margin-top: -20;
   position: absolute;
-  width: 80px;
-  height: 80px;
+  width: 120px;
+  height: 120px;
+  margin-left: -20;
+  cursor: pointer;
 }
 .Character {
   transition: transform 0.4s;
@@ -191,8 +194,8 @@ button.game_btn {
   object-fit: cover;
 }
 .img_dragon {
-  width: 80px;
-  height: 80px;
+  width: 120px;
+  height: 120px;
   object-fit: cover;
 }
 .Character[data-direction="right"] .Character_sprite {
@@ -315,10 +318,10 @@ button.game_btn {
 }
 
 .Character[data-direction="right"] .Character_sprite {
-  -webkit-transform: scaleX(-1);
+  -webkit-transform: scaleX(1);
 }
 .Character[data-direction="left"] .Character_sprite {
-  -webkit-transform: scaleX(1);
+  -webkit-transform: scaleX(-1);
 }
 
 .Character_name-container {

@@ -167,7 +167,7 @@ function setPosition(i) {
     dragonElement.innerHTML = `
         <div  class="grid-cell-dragon"></div>
         <div class="Character_sprite grid-cell-dragon">
-        <img  class="img_dragon" src="images/dundrian-cultist.gif"></div>
+        <img  class="img_dragon" src="images/dundrian-dragon.gif"></div>
         <div class="Dragon_name-container">
           <span class="Character_name"></span>
           <span class="Character_hp">0</span>
