@@ -7,6 +7,7 @@ const arrowYOffset = -490;
 let numberOfPlayers = 0;
 let selectionIndex = 0;
 let myPlayerIndex;
+let myName = "";
 
 //buttons
 const startBtn = document.getElementById("start-btn");
@@ -95,6 +96,9 @@ function numberOfPlayerFunction() {
     //change to true
     startBtn.disabled = false;
   }
+  try {
+    nameTag.querySelector(".profile-name").innerText = myName;
+  } catch (e) {}
 }
 
 (function () {
@@ -202,6 +206,34 @@ function numberOfPlayerFunction() {
   function initGame() {
     attackBtn.disabled = true;
     attackBtn.style.opacity = 0.3;
+    const nameTag = document.createElement("div");
+    nameTag.classList.add("Character");
+    playerRef.on("value", async (snapshot) => {
+      nameTag.innerHTML = `
+    <div class="profile-background grid-cell-profile"></div>
+        <div class="Character_sprite grid-cell2">
+        <img class="img_profile" src="images/dundrian-normal-player.gif"></div>
+          <div id="ring" class="profile-ring grid-cell-profile"></div>
+        <span class="profile-name" style="color:white"></span>
+         
+      `;
+
+      gameContainer.appendChild(nameTag);
+      nameTag.querySelector(".profile-name").innerText = snapshot
+        .child("/name")
+        .val();
+      nameTag
+        .querySelector("#ring")
+        .setAttribute(
+          "class",
+          "profile-ring-" +
+            snapshot.child("/color").val() +
+            " grid-cell-profile"
+        );
+      nameTag.setAttribute("data-color", snapshot.child("/color").val());
+
+      console.log("tag", nameTag);
+    });
 
     new KeyPressListener("ArrowUp", () => handleArrowPress(0, -1));
     new KeyPressListener("ArrowDown", () => handleArrowPress(0, 1));
@@ -222,11 +254,7 @@ function numberOfPlayerFunction() {
 
     dragonRef.on("value", async (snapshot) => {
       dragon = await snapshot.val();
-      //like players
-      // Object.keys(dragon).forEach((key) => {
-      //   let el = dragonElements[0];
-      //   console.log("drag EL", el);
-      // });
+
       const characterState = dragon;
       let el = dragonElement;
       const left = characterState.x + 200 + "px";
@@ -253,10 +281,6 @@ function numberOfPlayerFunction() {
         </div>
       `;
 
-      // setTimeout(function()=>{
-
-      // }, 2000)
-
       dragonElement.querySelector(".Character_name").innerText = dragon.name;
       dragonElement.querySelector(".Character_hp").innerText = dragon.hp;
       dragonElement.setAttribute("data-direction", dragon.direction);
@@ -278,10 +302,8 @@ function numberOfPlayerFunction() {
       });
     });
 
+    //runs when a change occurs
     allPlayersRef.on("value", (snapshot) => {
-      //LOGIC BASED ON AMOUNT OF PLAYERS
-
-      //runs when a change occurs
       players = snapshot.val() || {};
 
       Object.keys(players).forEach((key) => {
@@ -400,15 +422,61 @@ function numberOfPlayerFunction() {
 
     //Updates player name with text input
     playerNameInput.addEventListener("change", (e) => {
-      const newName = e.target.value || createName();
+      const newName = e.target.value || null;
       playerNameInput.value = newName;
-      playerRef.update({
-        name: newName,
-      });
+      myName = newName;
+      if (newName != undefined) {
+        nameTag.querySelector(".profile-name").innerText = myName;
+        playerRef.update({
+          name: newName,
+        });
+      }
     });
 
     startBtn.addEventListener("click", () => {
       console.log("hello there" + myPlayerIndex, selectionIndex);
+      let existingIndexes = [];
+      let changeIndexes = [];
+
+      let smallestIndex = 1000;
+
+      let newIndex;
+      var query = firebase.database().ref(`players/`).orderByKey();
+      query
+        .once("value", function (snapshot) {
+          snapshot.forEach(function (childSnapshot) {
+            var childIndex = childSnapshot.child("index").val();
+            existingIndexes.push(childIndex);
+          });
+        })
+        .then(function () {
+          newIndex = smallestIndex;
+          existingIndexes.sort();
+          for (let i = 0; i < numberOfPlayersHook.numberOfPlayers; i++) {
+            if (existingIndexes[i] != i) {
+              console.log(i, existingIndexes[i]);
+              changeIndexes.push([i, existingIndexes[i]]);
+            }
+          }
+          console.log(changeIndexes);
+          Object.keys(players).forEach((key) => {
+            for (let i = 0; i < changeIndexes.length; i++) {
+              if (players[key].index == changeIndexes[i][1]) {
+                var selectionRef = firebase.database().ref(`players/${key}`);
+                selectionRef.child("/index").set(changeIndexes[i][0]);
+                selectionRef
+                  .child("/color")
+                  .set(playerColors[changeIndexes[i][0]]);
+                selectionRef
+                  .child("/x")
+                  .set(setPosition(changeIndexes[i][0] + 1).x);
+                selectionRef
+                  .child("/y")
+                  .set(setPosition(changeIndexes[i][0] + 1).y);
+              }
+            }
+          });
+        });
     });
 
     attackBtn.addEventListener("click", () => {
@@ -446,6 +514,7 @@ function numberOfPlayerFunction() {
     });
     healBtn.addEventListener("click", () => {
       console.log("heal", selectionIndex);
+      console.log(myName);
     });
     bosshealBtn.addEventListener("click", () => {
       console.log("boss heal", selectionIndex);
@@ -491,7 +560,6 @@ function numberOfPlayerFunction() {
       query
         .once("value", function (snapshot) {
           snapshot.forEach(function (childSnapshot) {
-            var key = childSnapshot.key;
             var childIndex = childSnapshot.child("index").val();
 
             creationIndexArr[childIndex] = 100;
@@ -532,6 +600,7 @@ function numberOfPlayerFunction() {
                 y: pos.y,
                 index: creationIndex,
               });
+              myName = "player " + (creationIndex + 1);
             });
 
           //leaves the game

@@ -128,6 +128,24 @@ button.game_btn {
   height: 30px;
   cursor: pointer;
 }
+.grid-cell2 {
+  position: absolute;
+  top: 2;
+  left: 8;
+  width: 28px;
+  height: 30px;
+  margin-top: 6px;
+  margin-left: 1;
+}
+.grid-cell-profile {
+  position: absolute;
+  top: 2;
+  left: 8;
+  width: 37px;
+  height: 37px;
+  margin-top: 2;
+  margin-left: -3;
+}
 .grid-cell-dragon {
   margin-top: -20;
   position: absolute;
@@ -199,6 +217,59 @@ button.game_btn {
   height: 30px;
   object-fit: cover;
 }
+
+.img_profile {
+  width: 73px;
+  height: 73px;
+  margin-left: -14;
+  margin-top: 1;
+}
+
+/* PROFILE RINGS */
+.profile-ring-blue {
+  border: 5px solid cyan;
+  border-radius: 50px;
+}
+.profile-ring-red {
+  border: 5px solid red;
+  border-radius: 50px;
+}
+.profile-ring-orange {
+  border: 5px solid rgb(254, 154, 31);
+  border-radius: 50px;
+}
+.profile-ring-yellow {
+  border: 5px solid rgb(251, 231, 15);
+  border-radius: 50px;
+}
+.profile-ring-green {
+  border: 5px solid rgb(44, 215, 28);
+  border-radius: 50px;
+}
+.profile-ring-purple {
+  border: 5px solid rgb(172, 89, 210);
+  border-radius: 50px;
+}
+.profile-ring-pink {
+  border: 5px solid pink;
+  border-radius: 50px;
+}
+.profile-ring-gray {
+  border: 5px solid rgb(120, 120, 120);
+  border-radius: 50px;
+}
+
+.profile-background {
+  background-color: white;
+  border-radius: 50px;
+}
+.profile-name {
+  position: absolute;
+  top: 5;
+  left: 50;
+  font-weight: bold;
+}
+
 .img_dragon {
   width: 120px;
   height: 120px;
@@ -224,15 +295,14 @@ button.game_btn {
 .Character[data-color="red"] .Character_sprite {
   margin-left: -5;
   scale: 1.2;
-  filter: hue-rotate(170deg);
+  filter: hue-rotate(180deg);
 }
 .Character[data-color="red"] .Character_shadow {
-  background-color: cyan;
+  background-color: red;
   border-radius: 40px;
   scale: 0.2;
   margin-left: -24;
   margin-top: -23;
-  filter: hue-rotate(170deg);
 }
 
 .Character[data-color="orange"] .Character_sprite {
@@ -255,12 +325,11 @@ button.game_btn {
   filter: hue-rotate(220deg);
 }
 .Character[data-color="yellow"] .Character_shadow {
-  background-color: cyan;
+  background-color: yellow;
   border-radius: 40px;
   scale: 0.2;
   margin-left: -24;
   margin-top: -23;
-  filter: hue-rotate(220deg);
 }
 
 .Character[data-color="green"] .Character_sprite {
@@ -282,15 +351,14 @@ button.game_btn {
   -webkit-transform: scaleX(-1);
   margin-left: -5;
   scale: 1.2;
-  filter: hue-rotate(60deg);
+  filter: hue-rotate(80deg);
 }
 .Character[data-color="purple"] .Character_shadow {
-  background-color: cyan;
+  background-color: rgb(172, 89, 210);
   border-radius: 40px;
   scale: 0.2;
   margin-left: -24;
   margin-top: -23;
-  filter: hue-rotate(60deg);
 }
 
 .Character[data-color="pink"] .Character_sprite {
