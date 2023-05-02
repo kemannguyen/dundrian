@@ -32,6 +32,7 @@ body {
 }
 .player-info {
   position: absolute;
+  width: 100%;
   top: 0;
   left: 0;
   padding: 1em;
@@ -39,7 +40,12 @@ body {
   gap: 0.5em;
   align-items: flex-end;
 }
-
+.game-start {
+  position: absolute;
+  top: 80;
+  left: 0;
+  padding: 1em;
+}
 .notification-show {
   position: fixed;
   right: 2%;

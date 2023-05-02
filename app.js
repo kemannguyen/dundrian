@@ -1,9 +1,23 @@
 function getKeyString(x, y) {}
 
 const MAX_PLAYERS = 8;
+const MIN_PLAYERS = 4;
 const arrowXOffset = 570;
 const arrowYOffset = -490;
 let numberOfPlayers = 0;
+let selectionIndex = 0;
+let myPlayerIndex;
+let dragon;
+
+//buttons
+const startBtn = document.getElementById("start-btn");
+const attackBtn = document.getElementById("attack-btn");
+const healBtn = document.getElementById("heal-btn");
+const bosshealBtn = document.getElementById("boss-heal-btn");
+const parryBtn = document.getElementById("parry-btn");
+
+//firebase references
+const dragonRef2 = firebase.database().ref("dundrian");
 
 const playerColors = [
   "blue",
@@ -31,6 +45,59 @@ function setPosition(i) {
   return slots[i];
 }
 
+// Custom hook
+let selectionHook = {};
+Object.defineProperty(selectionHook, "selectionIndex", {
+  get: function () {
+    return selectionIndex;
+  },
+  set: function (newValue) {
+    selectionIndex = newValue; // Run the function every time valueA changes
+    selectionFunction();
+  },
+});
+
+function selectionFunction() {
+  console.log("valueA changed:", selectionIndex);
+  if (selectionIndex == myPlayerIndex) {
+    attackBtn.disabled = true;
+    attackBtn.style.opacity = 0.3;
+    console.log("true");
+  } else {
+    attackBtn.disabled = false;
+    attackBtn.style.opacity = 0.8;
+  }
+}
+
+let numberOfPlayersHook = {};
+Object.defineProperty(numberOfPlayersHook, "numberOfPlayers", {
+  get: function () {
+    return numberOfPlayers;
+  },
+  set: function (newValue) {
+    numberOfPlayers = newValue; // Run the function every time valueA changes
+    numberOfPlayerFunction();
+  },
+});
+
+function numberOfPlayerFunction() {
+  console.log("players changed:", numberOfPlayers);
+  if (numberOfPlayersHook.numberOfPlayers == 4) {
+    startBtn.disabled = false;
+    dragonRef2.child("/hp").set(40);
+  } else if (numberOfPlayersHook.numberOfPlayers == 5) {
+    startBtn.disabled = false;
+    dragonRef2.child("/hp").set(50);
+  } else if (numberOfPlayersHook.numberOfPlayers > 5) {
+    startBtn.disabled = false;
+    dragonRef2.child("/hp").set(75);
+  } else {
+    dragonRef2.child("/hp").set(20);
+    //change to true
+    startBtn.disabled = false;
+  }
+}
+
 (function () {
   let playerId;
   let playerRef;
@@ -47,70 +114,82 @@ function setPosition(i) {
   //dom elements
   let playerElements = {};
   let selectionArrow = document.getElementById("select-arrow");
-  let selectionIndex = 0;
 
   const gameContainer = document.querySelector(".game-container");
   const playerNameInput = document.querySelector("#player-name");
   let oldSelectIndex;
+
   function handleArrowPress(xChange = 0, yChange = 0) {
-    oldSelectIndex = selectionIndex;
+    oldSelectIndex = selectionHook.selectionIndex;
     console.log(oldSelectIndex);
     if (yChange == -1) {
-      selectionIndex -= 1;
+      selectionHook.selectionIndex -= 1;
 
       //skips dragon (index 0)
-      if (selectionIndex == 0 && oldSelectIndex == 1) {
+      if (selectionHook.selectionIndex == 0 && oldSelectIndex == 1) {
         console.log("w");
-        selectionIndex -= 1;
+        selectionHook.selectionIndex -= 1;
       }
       //   if(selectionIndex == -1){
       //     selectionIndex
       //   }
     }
     if (yChange == 1) {
-      selectionIndex += 1;
+      selectionHook.selectionIndex += 1;
 
       //skips dragon (index 0)
-      if (selectionIndex > numberOfPlayers) {
-        selectionIndex = selectionIndex % (numberOfPlayers + 1);
+      if (selectionHook.selectionIndex > numberOfPlayersHook.numberOfPlayers) {
+        selectionHook.selectionIndex =
+          selectionHook.selectionIndex %
+          (numberOfPlayersHook.numberOfPlayers + 1);
       }
-      if (selectionIndex == 0 && oldSelectIndex == numberOfPlayers) {
+      if (
+        selectionHook.selectionIndex == 0 &&
+        oldSelectIndex == numberOfPlayersHook.numberOfPlayers
+      ) {
         console.log("Q");
-        selectionIndex += 1;
+        selectionHook.selectionIndex += 1;
       }
     }
     if (xChange == -1) {
-      if (selectionIndex >= 1 && selectionIndex <= 4) {
-        selectionIndex = oldSelectIndex;
-      } else if (selectionIndex == 0) {
-        selectionIndex = 1;
+      if (
+        selectionHook.selectionIndex >= 1 &&
+        selectionHook.selectionIndex <= 4
+      ) {
+        selectionHook.selectionIndex = oldSelectIndex;
+      } else if (selectionHook.selectionIndex == 0) {
+        selectionHook.selectionIndex = 1;
       } else {
-        selectionIndex = 0;
+        selectionHook.selectionIndex = 0;
       }
     }
     if (xChange == 1) {
-      if (selectionIndex >= 1 && selectionIndex <= 4) {
-        selectionIndex = 0;
-      } else if (selectionIndex == 0) {
-        if (numberOfPlayers > 4) {
-          selectionIndex = 5;
+      if (
+        selectionHook.selectionIndex >= 1 &&
+        selectionHook.selectionIndex <= 4
+      ) {
+        selectionHook.selectionIndex = 0;
+      } else if (selectionHook.selectionIndex == 0) {
+        if (numberOfPlayersHook.numberOfPlayers > 4) {
+          selectionHook.selectionIndex = 5;
         }
       }
     }
 
-    selectionIndex = selectionIndex % (numberOfPlayers + 1);
-    if (selectionIndex == -0) {
+    selectionHook.selectionIndex =
+      selectionHook.selectionIndex % (numberOfPlayersHook.numberOfPlayers + 1);
+    if (selectionHook.selectionIndex == -0) {
       //selectionIndex = 0;
     }
-    if (selectionIndex < 0) {
-      selectionIndex = numberOfPlayers;
+    if (selectionHook.selectionIndex < 0) {
+      selectionHook.selectionIndex = numberOfPlayersHook.numberOfPlayers;
     }
-    console.log("index", selectionIndex);
+    console.log("index", selectionHook.selectionIndex);
 
     //move to the next space
 
-    const xPos = setPosition(selectionIndex).x;
-    const yPos = setPosition(selectionIndex).y;
+    const xPos = setPosition(selectionHook.selectionIndex).x;
+    const yPos = setPosition(selectionHook.selectionIndex).y;
 
     //players[playerId].hp = selectionIndex;
 
@@ -122,7 +201,9 @@ function setPosition(i) {
   }
 
   function initGame() {
-    let test = false;
+    attackBtn.disabled = true;
+    attackBtn.style.opacity = 0.3;
+
     new KeyPressListener("ArrowUp", () => handleArrowPress(0, -1));
     new KeyPressListener("ArrowDown", () => handleArrowPress(0, 1));
     new KeyPressListener("ArrowLeft", () => handleArrowPress(-1, 0));
@@ -164,6 +245,8 @@ function setPosition(i) {
       } catch (e) {}
     });
 
+    setTimeout(2000);
+
     dragonElement.innerHTML = `
         <div  class="grid-cell-dragon"></div>
         <div class="Character_sprite grid-cell-dragon">
@@ -182,16 +265,7 @@ function setPosition(i) {
 
     dragonClick = document.querySelector("#dundrian");
     allPlayersRef.on("value", (snapshot) => {
-      //changes dragon hp based on players
-      if (numberOfPlayers == 4) {
-        dragonRef.child("/hp").set(40);
-      } else if (numberOfPlayers == 5) {
-        dragonRef.child("/hp").set(50);
-      } else if (numberOfPlayers > 5) {
-        dragonRef.child("/hp").set(75);
-      } else {
-        dragonRef.child("/hp").set(40);
-      }
+      //LOGIC BASED ON AMOUNT OF PLAYERS
 
       //runs when a change occurs
       players = snapshot.val() || {};
@@ -213,6 +287,9 @@ function setPosition(i) {
 
     allPlayersRef.on("child_added", (snapshot) => {
       //runs when a new node is added to the tree in the DATABASE
+
+      console.log("num", numberOfPlayersHook.numberOfPlayers);
+
       const addedPlayer = snapshot.val();
       console.log("A_P = P_K", addedPlayer);
       const characterElement = document.createElement("div");
@@ -265,6 +342,7 @@ function setPosition(i) {
                 const pos = setPosition(players[key].index + 1);
                 selectionArrow.style.left = 48 * pos.x - arrowXOffset + "px";
                 selectionArrow.style.top = 48 * pos.y + arrowYOffset + "px";
+                selectionHook.selectionIndex = players[key].index + 1;
               }
             });
           });
@@ -279,7 +357,7 @@ function setPosition(i) {
         }
       }, 2000);
       console.log(playerClicks.length);
-      numberOfPlayers++;
+      numberOfPlayersHook.numberOfPlayers += 1;
     });
 
     //Remove character DOM element after they leave
@@ -294,7 +372,7 @@ function setPosition(i) {
       delete playerElements[removedKey];
       console.log("PC_L", playerClicks.length);
       console.log("PC", playerClicks);
-      numberOfPlayers--;
+      numberOfPlayersHook.numberOfPlayers -= 1;
 
       //notify that player left
       notificationContent.innerHTML = snapshot.val().name + " left";
@@ -307,13 +385,59 @@ function setPosition(i) {
     });
 
     //Updates player name with text input
-
     playerNameInput.addEventListener("change", (e) => {
       const newName = e.target.value || createName();
       playerNameInput.value = newName;
       playerRef.update({
         name: newName,
       });
+    });
+
+    startBtn.addEventListener("click", () => {
+      console.log("hello there" + myPlayerIndex, selectionIndex);
+    });
+
+    attackBtn.addEventListener("click", () => {
+      console.log("atack", selectionIndex);
+      if (selectionIndex > 0) {
+        Object.keys(players).forEach((key) => {
+          if (players[key].index + 1 == selectionIndex) {
+            if (playerId == key) {
+              notificationContent.innerHTML = "can't attack yourself";
+              notification.className = "notification-show";
+              setTimeout(function () {
+                notification.className = "notification-hide";
+              }, 2000);
+              return;
+            }
+            var selectionRef = firebase.database().ref(`players/${key}`);
+            let newHp;
+            selectionRef.on("value", (snapshot) => {
+              newHp = snapshot.child("/hp").val();
+            });
+            newHp -= 5;
+            selectionRef.child("/hp").set(newHp);
+          }
+        });
+      } else {
+        //change dragon hp
+        var selectionRef = firebase.database().ref(`dundrian`);
+        let newHp;
+        selectionRef.on("value", (snapshot) => {
+          newHp = snapshot.child("/hp").val();
+        });
+        newHp -= 5;
+        selectionRef.child("/hp").set(newHp);
+      }
+    });
+    healBtn.addEventListener("click", () => {
+      console.log("heal", selectionIndex);
+    });
+    bosshealBtn.addEventListener("click", () => {
+      console.log("boss heal", selectionIndex);
+    });
+    parryBtn.addEventListener("click", () => {
+      console.log("parry", selectionIndex);
     });
 
     //changes color att button click
@@ -326,11 +450,12 @@ function setPosition(i) {
       const pos = setPosition(0);
       selectionArrow.style.left = 48 * pos.x - arrowXOffset + "px";
       selectionArrow.style.top = 48 * pos.y + arrowYOffset + "px";
+      selectionHook.selectionIndex = 0;
     });
   }
 
   firebase.auth().onAuthStateChanged((user) => {
-    console.log();
+    console.log(user.uid);
     if (user.uid) {
       //logged in
       playerId = user.uid;
@@ -381,15 +506,16 @@ function setPosition(i) {
 
       //creates new player in DB
       ref.once("value").then(function (snapshot) {
-        numberOfPlayers = snapshot.numChildren();
-        if (numberOfPlayers < MAX_PLAYERS) {
+        numberOfPlayersHook.numberOfPlayers = snapshot.numChildren();
+        if (numberOfPlayersHook.numberOfPlayers < MAX_PLAYERS) {
           ref2
             .once("value")
             .then(function (snapshot) {
-              numberOfPlayers = snapshot.numChildren();
+              numberOfPlayersHook.numberOfPlayers = snapshot.numChildren();
 
               pos = setPosition(creationIndex + 1);
-              selectionIndex = creationIndex;
+              selectionIndex = creationIndex + 1;
+              myPlayerIndex = selectionIndex;
               selectionArrow.style.left = 48 * pos.x - arrowXOffset + "px";
               selectionArrow.style.top = 48 * pos.y + arrowYOffset + "px";
             })
@@ -424,7 +550,7 @@ function setPosition(i) {
       });
     } else {
       //logged out
-      console.log(numberOfPlayers);
+      console.log(numberOfPlayersHook.numberOfPlayers);
     }
   });
 
