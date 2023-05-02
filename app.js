@@ -81,18 +81,44 @@ Object.defineProperty(numberOfPlayersHook, "numberOfPlayers", {
 });
 
 function numberOfPlayerFunction() {
+  let players = {};
+  const allPlayersRef = firebase.database().ref("players");
+  allPlayersRef.on("value", (snapshot) => {
+    players = snapshot.val() || {};
+  });
+
   console.log("players changed:", numberOfPlayers);
   if (numberOfPlayersHook.numberOfPlayers == 4) {
     startBtn.disabled = false;
+    //updates dragon hp
     dragonRef2.child("/hp").set(40);
+
+    //updates player hp
+    Object.keys(players).forEach((key) => {
+      var selectionRef = firebase.database().ref(`players/${key}`);
+      selectionRef.child("/hp").set(25);
+    });
   } else if (numberOfPlayersHook.numberOfPlayers == 5) {
     startBtn.disabled = false;
     dragonRef2.child("/hp").set(50);
+
+    Object.keys(players).forEach((key) => {
+      var selectionRef = firebase.database().ref(`players/${key}`);
+      selectionRef.child("/hp").set(20);
+    });
   } else if (numberOfPlayersHook.numberOfPlayers > 5) {
     startBtn.disabled = false;
     dragonRef2.child("/hp").set(75);
+    Object.keys(players).forEach((key) => {
+      var selectionRef = firebase.database().ref(`players/${key}`);
+      selectionRef.child("/hp").set(20);
+    });
   } else {
-    dragonRef2.child("/hp").set(20);
+    dragonRef2.child("/hp").set(0);
+    Object.keys(players).forEach((key) => {
+      var selectionRef = firebase.database().ref(`players/${key}`);
+      selectionRef.child("/hp").set(0);
+    });
     //change to true
     startBtn.disabled = false;
   }
@@ -133,9 +159,6 @@ function numberOfPlayerFunction() {
         console.log("w");
         selectionHook.selectionIndex -= 1;
       }
-      //   if(selectionIndex == -1){
-      //     selectionIndex
-      //   }
     }
     if (yChange == 1) {
       selectionHook.selectionIndex += 1;
@@ -206,6 +229,8 @@ function numberOfPlayerFunction() {
   function initGame() {
     attackBtn.disabled = true;
     attackBtn.style.opacity = 0.3;
+
+    //creates player icon on top
     const nameTag = document.createElement("div");
     nameTag.classList.add("Character");
     playerRef.on("value", async (snapshot) => {
@@ -256,28 +281,24 @@ function numberOfPlayerFunction() {
       dragon = await snapshot.val();
 
       const characterState = dragon;
-      let el = dragonElement;
       const left = characterState.x + 200 + "px";
       const top = characterState.y + 100 + "px";
 
-      el.setAttribute("data-direction", characterState.direction);
-      el.setAttribute("id", "dundrian");
-      el.style.transform = `translate3d(${left}, ${top}, 0)`;
+      dragonElement.setAttribute("data-direction", characterState.direction);
+      dragonElement.setAttribute("id", "dundrian");
+      dragonElement.style.transform = `translate3d(${left}, ${top}, 0)`;
 
       //players[key]
       console.log("dragon = players[key]", dragon);
       //player el
       console.log("dragonEL = player EL", dragonElement);
-      try {
-        el.querySelector(".Character_hp").innerText = characterState.hp;
-      } catch (e) {}
       dragonElement.innerHTML = `
         <div  class="grid-cell-dragon"></div>
         <div class="Character_sprite grid-cell-dragon">
         <img  class="img_dragon" src="images/dundrian-dragon.gif"></div>
         <div class="Dragon_name-container">
           <span class="Character_name"></span>
-          <span class="Character_hp">0</span>
+          <span class="Character_hp"></span>
         </div>
       `;
 
@@ -417,6 +438,8 @@ function numberOfPlayerFunction() {
       setTimeout(function () {
         notification.className = "notification-hide";
       }, 2000);
+
+      dragonRef.update({ start: false });
       //updates existing players
     });
 
@@ -435,12 +458,16 @@ function numberOfPlayerFunction() {
 
     startBtn.addEventListener("click", () => {
       console.log("hello there" + myPlayerIndex, selectionIndex);
+
+      AutoSortPlayers();
+      dragonRef.update({ start: true });
+    });
+
+    //Auto sort players
+    function AutoSortPlayers() {
       let existingIndexes = [];
       let changeIndexes = [];
 
-      let smallestIndex = 1000;
-
-      let newIndex;
       var query = firebase.database().ref(`players/`).orderByKey();
       query
         .once("value", function (snapshot) {
@@ -450,7 +477,6 @@ function numberOfPlayerFunction() {
           });
         })
         .then(function () {
-          newIndex = smallestIndex;
           existingIndexes.sort();
           for (let i = 0; i < numberOfPlayersHook.numberOfPlayers; i++) {
             if (existingIndexes[i] != i) {
@@ -458,7 +484,6 @@ function numberOfPlayerFunction() {
               changeIndexes.push([i, existingIndexes[i]]);
             }
           }
-          console.log(changeIndexes);
           Object.keys(players).forEach((key) => {
             for (let i = 0; i < changeIndexes.length; i++) {
               if (players[key].index == changeIndexes[i][1]) {
@@ -477,21 +502,21 @@ function numberOfPlayerFunction() {
             }
           });
         });
-    });
+    }
 
     attackBtn.addEventListener("click", () => {
       console.log("atack", selectionIndex);
       if (selectionIndex > 0) {
         Object.keys(players).forEach((key) => {
           if (players[key].index + 1 == selectionIndex) {
-            if (playerId == key) {
-              notificationContent.innerHTML = "can't attack yourself";
-              notification.className = "notification-show";
-              setTimeout(function () {
-                notification.className = "notification-hide";
-              }, 2000);
-              return;
-            }
+            // if (playerId == key) {
+            //   notificationContent.innerHTML = "can't attack yourself";
+            //   notification.className = "notification-show";
+            //   setTimeout(function () {
+            //     notification.className = "notification-hide";
+            //   }, 2000);
+            //   return;
+            // }
             var selectionRef = firebase.database().ref(`players/${key}`);
             let newHp;
             selectionRef.on("value", (snapshot) => {
@@ -514,7 +539,27 @@ function numberOfPlayerFunction() {
     });
     healBtn.addEventListener("click", () => {
       console.log("heal", selectionIndex);
-      console.log(myName);
+      if (selectionIndex > 0) {
+        Object.keys(players).forEach((key) => {
+          if (players[key].index + 1 == selectionIndex) {
+            // if (playerId == key) {
+            //   notificationContent.innerHTML = "can't attack yourself";
+            //   notification.className = "notification-show";
+            //   setTimeout(function () {
+            //     notification.className = "notification-hide";
+            //   }, 2000);
+            //   return;
+            // }
+            var selectionRef = firebase.database().ref(`players/${key}`);
+            let newHp;
+            selectionRef.on("value", (snapshot) => {
+              newHp = snapshot.child("/hp").val();
+            });
+            newHp += 5;
+            selectionRef.child("/hp").set(newHp);
+          }
+        });
+      }
     });
     bosshealBtn.addEventListener("click", () => {
       console.log("boss heal", selectionIndex);
@@ -531,18 +576,18 @@ function numberOfPlayerFunction() {
       //logged in
       playerId = user.uid;
 
-      // //creates dundrian
+      // //CREATES DUNDRIAN
 
-      var dpos = setPosition(0);
-      var rootRef = firebase.database().ref(`dundrian`);
-      var dragon = {
-        name: "dundrian",
-        hp: 40,
-        direction: "right",
-        x: dpos.x,
-        y: dpos.y,
-      };
-      rootRef.set(dragon);
+      //var dpos = setPosition(0);
+      // var rootRef = firebase.database().ref(`dundrian`);
+      // var dragon = {
+      //   name: "dundrian",
+      //   hp: 40,
+      //   direction: "right",
+      //   x: dpos.x,
+      //   y: dpos.y,
+      // };
+      // rootRef.set(dragon);
 
       //find how many players there are in game
       var pos = { x: 0, y: 0 };
