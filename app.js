@@ -7,7 +7,6 @@ const arrowYOffset = -490;
 let numberOfPlayers = 0;
 let selectionIndex = 0;
 let myPlayerIndex;
-let dragon;
 
 //buttons
 const startBtn = document.getElementById("start-btn");
@@ -219,9 +218,10 @@ function numberOfPlayerFunction() {
     const dragonElement = document.createElement("div");
     dragonElement.classList.add("Character", "grid-cell");
     //DRAGON
+    let dragon;
 
-    dragonRef.on("value", (snapshot) => {
-      dragon = snapshot.val();
+    dragonRef.on("value", async (snapshot) => {
+      dragon = await snapshot.val();
       //like players
       // Object.keys(dragon).forEach((key) => {
       //   let el = dragonElements[0];
@@ -243,11 +243,7 @@ function numberOfPlayerFunction() {
       try {
         el.querySelector(".Character_hp").innerText = characterState.hp;
       } catch (e) {}
-    });
-
-    setTimeout(2000);
-
-    dragonElement.innerHTML = `
+      dragonElement.innerHTML = `
         <div  class="grid-cell-dragon"></div>
         <div class="Character_sprite grid-cell-dragon">
         <img  class="img_dragon" src="images/dundrian-dragon.gif"></div>
@@ -257,13 +253,31 @@ function numberOfPlayerFunction() {
         </div>
       `;
 
-    dragonElement.querySelector(".Character_name").innerText = dragon.name;
-    dragonElement.querySelector(".Character_hp").innerText = dragon.hp;
-    dragonElement.setAttribute("data-direction", dragon.direction);
+      // setTimeout(function()=>{
 
-    gameContainer.appendChild(dragonElement);
+      // }, 2000)
 
-    dragonClick = document.querySelector("#dundrian");
+      dragonElement.querySelector(".Character_name").innerText = dragon.name;
+      dragonElement.querySelector(".Character_hp").innerText = dragon.hp;
+      dragonElement.setAttribute("data-direction", dragon.direction);
+
+      gameContainer.appendChild(dragonElement);
+
+      dragonClick = document.querySelector("#dundrian");
+
+      dragonClick.addEventListener("click", (e) => {
+        //DRAGON LOGIC
+
+        //console.log(e.currentTarget);
+        //var tempElement = e.currentTarget;
+
+        const pos = setPosition(0);
+        selectionArrow.style.left = 48 * pos.x - arrowXOffset + "px";
+        selectionArrow.style.top = 48 * pos.y + arrowYOffset + "px";
+        selectionHook.selectionIndex = 0;
+      });
+    });
+
     allPlayersRef.on("value", (snapshot) => {
       //LOGIC BASED ON AMOUNT OF PLAYERS
 
@@ -441,22 +455,10 @@ function numberOfPlayerFunction() {
     });
 
     //changes color att button click
-    dragonClick.addEventListener("click", (e) => {
-      //DRAGON LOGIC
-
-      //console.log(e.currentTarget);
-      //var tempElement = e.currentTarget;
-
-      const pos = setPosition(0);
-      selectionArrow.style.left = 48 * pos.x - arrowXOffset + "px";
-      selectionArrow.style.top = 48 * pos.y + arrowYOffset + "px";
-      selectionHook.selectionIndex = 0;
-    });
   }
 
   firebase.auth().onAuthStateChanged((user) => {
-    console.log(user.uid);
-    if (user.uid) {
+    if (user != null) {
       //logged in
       playerId = user.uid;
 
