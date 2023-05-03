@@ -15,9 +15,10 @@ const attackBtn = document.getElementById("attack-btn");
 const healBtn = document.getElementById("heal-btn");
 const bosshealBtn = document.getElementById("boss-heal-btn");
 const parryBtn = document.getElementById("parry-btn");
+const activateRoleBtn = document.getElementById("activate-role-btn");
 
 //firebase references
-const dragonRef2 = firebase.database().ref("dundrian");
+let dragonRef2;
 
 const playerColors = [
   "blue",
@@ -44,8 +45,20 @@ function setPosition(i) {
   ];
   return slots[i];
 }
-
-// Custom hook
+function setRole(i) {
+  let roles = [
+    "paladin",
+    "paladin",
+    "cultist",
+    "ninja",
+    "ninja",
+    "paladin",
+    "cultist",
+    "cultist",
+  ];
+  return roles[i];
+}
+// Tracks when selection index change
 let selectionHook = {};
 Object.defineProperty(selectionHook, "selectionIndex", {
   get: function () {
@@ -69,6 +82,7 @@ function selectionFunction() {
   }
 }
 
+//Tracks when numberOfPlayers change
 let numberOfPlayersHook = {};
 Object.defineProperty(numberOfPlayersHook, "numberOfPlayers", {
   get: function () {
@@ -87,7 +101,6 @@ function numberOfPlayerFunction() {
     players = snapshot.val() || {};
   });
 
-  console.log("players changed:", numberOfPlayers);
   if (numberOfPlayersHook.numberOfPlayers == 4) {
     startBtn.disabled = false;
     //updates dragon hp
@@ -230,9 +243,14 @@ function numberOfPlayerFunction() {
     attackBtn.disabled = true;
     attackBtn.style.opacity = 0.3;
 
+    let confirmButton;
+    let undoButton;
+    //INIT HUD
     //creates player icon on top
     const nameTag = document.createElement("div");
     nameTag.classList.add("Character");
+
+    const roleText = document.createElement("div");
     playerRef.on("value", async (snapshot) => {
       nameTag.innerHTML = `
     <div class="profile-background grid-cell-profile"></div>
@@ -245,20 +263,41 @@ function numberOfPlayerFunction() {
 
       gameContainer.appendChild(nameTag);
       nameTag.querySelector(".profile-name").innerText = snapshot
-        .child("/name")
+        .child("name")
         .val();
       nameTag
         .querySelector("#ring")
         .setAttribute(
           "class",
-          "profile-ring-" +
-            snapshot.child("/color").val() +
-            " grid-cell-profile"
+          "profile-ring-" + snapshot.child("color").val() + " grid-cell-profile"
         );
-      nameTag.setAttribute("data-color", snapshot.child("/color").val());
+      nameTag.setAttribute("data-color", snapshot.child("color").val());
 
       console.log("tag", nameTag);
+
+      roleText.innerHTML = `
+         <span class="role-text" style="color:white"></span>
+         
+      `;
+      gameContainer.appendChild(roleText);
+      roleText.querySelector(".role-text").innerText =
+        "role: " + snapshot.child("role").val();
     });
+
+    let confirmActionsBtn = document.createElement("div");
+    confirmActionsBtn.classList.add("action_btns");
+    confirmActionsBtn.innerHTML = `
+    <button id="undo-btn" style="margin-top: auto" class="undo_btn" hidden>
+        undo
+      </button>
+    <button id="confirm-btn" style="margin-top: auto" class="confirm_btn" hidden>
+        confirm
+      </button>
+      `;
+    gameContainer.appendChild(confirmActionsBtn);
+
+    undoButton = document.getElementById("undo-btn");
+    confirmButton = document.getElementById("confirm-btn");
 
     new KeyPressListener("ArrowUp", () => handleArrowPress(0, -1));
     new KeyPressListener("ArrowDown", () => handleArrowPress(0, 1));
@@ -270,11 +309,12 @@ function numberOfPlayerFunction() {
     new KeyPressListener("KeyD", () => handleArrowPress(-1, 0));
     new KeyPressListener("KeyA", () => handleArrowPress(1, 0));
 
+    //DRAGON
     const dragonRef = firebase.database().ref("dundrian");
     const allPlayersRef = firebase.database().ref("players");
     const dragonElement = document.createElement("div");
     dragonElement.classList.add("Character", "grid-cell");
-    //DRAGON
+
     let dragon;
 
     dragonRef.on("value", async (snapshot) => {
@@ -312,10 +352,6 @@ function numberOfPlayerFunction() {
 
       dragonClick.addEventListener("click", (e) => {
         //DRAGON LOGIC
-
-        //console.log(e.currentTarget);
-        //var tempElement = e.currentTarget;
-
         const pos = setPosition(0);
         selectionArrow.style.left = 48 * pos.x - arrowXOffset + "px";
         selectionArrow.style.top = 48 * pos.y + arrowYOffset + "px";
@@ -323,7 +359,7 @@ function numberOfPlayerFunction() {
       });
     });
 
-    //runs when a change occurs
+    //runs when a change occurs in the DB
     allPlayersRef.on("value", (snapshot) => {
       players = snapshot.val() || {};
 
@@ -339,12 +375,27 @@ function numberOfPlayerFunction() {
         const top = 16 * characterState.y - 4 + "px";
 
         el.style.transform = `translate3d(${left}, ${top}, 0)`;
+
+        //Change character if role activated
+        if (players[key].revealed) {
+          if (players[key].role == "cultist") {
+            el.querySelector(".img_player").setAttribute(
+              "src",
+              "images/dundrian-cultist.gif"
+            );
+          }
+          if (players[key].role == "ninja") {
+            el.querySelector(".img_player").setAttribute(
+              "src",
+              "images/dundrian-ninja.gif"
+            );
+          }
+        }
       });
     });
 
+    //runs when a new node is added to the tree in the DB
     allPlayersRef.on("child_added", (snapshot) => {
-      //runs when a new node is added to the tree in the DATABASE
-
       console.log("num", numberOfPlayersHook.numberOfPlayers);
 
       const addedPlayer = snapshot.val();
@@ -382,8 +433,10 @@ function numberOfPlayerFunction() {
       }, 2000);
 
       gameContainer.appendChild(characterElement);
-      let playerClick;
+
       //player click function
+      let playerClick;
+
       setInterval(function () {
         playerClick = document.querySelector(`#${addedPlayer.id}`);
       }, 200);
@@ -433,14 +486,10 @@ function numberOfPlayerFunction() {
 
       //notify that player left
       notificationContent.innerHTML = snapshot.val().name + " left";
-
       notification.className = "notification-show";
       setTimeout(function () {
         notification.className = "notification-hide";
       }, 2000);
-
-      dragonRef.update({ start: false });
-      //updates existing players
     });
 
     //Updates player name with text input
@@ -459,6 +508,19 @@ function numberOfPlayerFunction() {
     startBtn.addEventListener("click", () => {
       console.log("hello there" + myPlayerIndex, selectionIndex);
 
+      //Randomize roles to the players in the game
+      let roleArr = [];
+      for (let i = 0; i < numberOfPlayersHook.numberOfPlayers; i++) {
+        roleArr.push(setRole(i));
+      }
+      roleArr.sort(() => (Math.random() > 0.5 ? 1 : -1));
+      let roleIndex = 0;
+      Object.keys(players).forEach((key) => {
+        var selectionRef = firebase.database().ref(`players/${key}`);
+        selectionRef.child("role").set(roleArr[roleIndex]);
+        roleIndex++;
+      });
+      console.log(roleArr);
       AutoSortPlayers();
       dragonRef.update({ start: true });
     });
@@ -504,6 +566,7 @@ function numberOfPlayerFunction() {
         });
     }
 
+    //GAME BUTTONS
     attackBtn.addEventListener("click", () => {
       console.log("atack", selectionIndex);
       if (selectionIndex > 0) {
@@ -539,17 +602,10 @@ function numberOfPlayerFunction() {
     });
     healBtn.addEventListener("click", () => {
       console.log("heal", selectionIndex);
+      //Heals player
       if (selectionIndex > 0) {
         Object.keys(players).forEach((key) => {
           if (players[key].index + 1 == selectionIndex) {
-            // if (playerId == key) {
-            //   notificationContent.innerHTML = "can't attack yourself";
-            //   notification.className = "notification-show";
-            //   setTimeout(function () {
-            //     notification.className = "notification-hide";
-            //   }, 2000);
-            //   return;
-            // }
             var selectionRef = firebase.database().ref(`players/${key}`);
             let newHp;
             selectionRef.on("value", (snapshot) => {
@@ -563,12 +619,32 @@ function numberOfPlayerFunction() {
     });
     bosshealBtn.addEventListener("click", () => {
       console.log("boss heal", selectionIndex);
+
+      //USE THIS AFTER ACTIONS HAS BEEN MADE
+      confirmButton.hidden = false;
+      undoButton.hidden = false;
+      playerRef.child("role").set("ninja");
     });
     parryBtn.addEventListener("click", () => {
       console.log("parry", selectionIndex);
+      playerRef.child("role").set("cultist");
+    });
+    activateRoleBtn.addEventListener("click", () => {
+      console.log("parry", selectionIndex);
+      playerRef.child("revealed").set(true);
     });
 
-    //changes color att button click
+    confirmButton.addEventListener("click", () => {
+      console.log("confirm");
+    });
+    undoButton.addEventListener("click", () => {
+      console.log("undo");
+    });
+
+    //Stops the game when someone leaves
+    window.onbeforeunload = function () {
+      dragonRef2.child("/start").set(false);
+    };
   }
 
   firebase.auth().onAuthStateChanged((user) => {
@@ -576,27 +652,15 @@ function numberOfPlayerFunction() {
       //logged in
       playerId = user.uid;
 
-      // //CREATES DUNDRIAN
-
-      //var dpos = setPosition(0);
-      // var rootRef = firebase.database().ref(`dundrian`);
-      // var dragon = {
-      //   name: "dundrian",
-      //   hp: 40,
-      //   direction: "right",
-      //   x: dpos.x,
-      //   y: dpos.y,
-      // };
-      // rootRef.set(dragon);
-
       //find how many players there are in game
       var pos = { x: 0, y: 0 };
       playerRef = firebase.database().ref(`players/${playerId}`);
+      dragonRef2 = firebase.database().ref("dundrian");
 
       var ref = firebase.database().ref(`players`);
       var ref2 = firebase.database().ref(`players`);
 
-      //find lowest open index
+      //find lowest open index for next player to join
       let smallestIndex = 1000;
 
       let creationIndexArr = [0, 1, 2, 3, 4, 5, 6, 7];
@@ -623,35 +687,51 @@ function numberOfPlayerFunction() {
       ref.once("value").then(function (snapshot) {
         numberOfPlayersHook.numberOfPlayers = snapshot.numChildren();
         if (numberOfPlayersHook.numberOfPlayers < MAX_PLAYERS) {
-          ref2
-            .once("value")
-            .then(function (snapshot) {
-              numberOfPlayersHook.numberOfPlayers = snapshot.numChildren();
+          dragonRef2.once("value").then(function (snap) {
+            let gamestarted = snap.child("/start").val();
+            if (gamestarted) {
+              const characterElement = document.createElement("div");
+              characterElement.innerHTML = `
+              <div class="game-full-text">
+                <span class="Character_name">GAME HAS STARTED</span>
+              </div>
+              `;
+              gameContainer.appendChild(characterElement);
+              selectionArrow.style.opacity = 0;
+              return;
+            }
+            ref2
+              .once("value")
+              .then(function (snapshot) {
+                numberOfPlayersHook.numberOfPlayers = snapshot.numChildren();
 
-              pos = setPosition(creationIndex + 1);
-              selectionIndex = creationIndex + 1;
-              myPlayerIndex = selectionIndex;
-              selectionArrow.style.left = 48 * pos.x - arrowXOffset + "px";
-              selectionArrow.style.top = 48 * pos.y + arrowYOffset + "px";
-            })
-            .then(() => {
-              //visuals
-              playerRef.set({
-                id: playerId,
-                name: "player " + (creationIndex + 1),
-                hp: 20,
-                color: playerColors[creationIndex],
-                x: pos.x,
-                y: pos.y,
-                index: creationIndex,
+                pos = setPosition(creationIndex + 1);
+                selectionIndex = creationIndex + 1;
+                myPlayerIndex = selectionIndex;
+                selectionArrow.style.left = 48 * pos.x - arrowXOffset + "px";
+                selectionArrow.style.top = 48 * pos.y + arrowYOffset + "px";
+              })
+              .then(() => {
+                //visuals
+                playerRef.set({
+                  id: playerId,
+                  name: "player " + (creationIndex + 1),
+                  hp: 20,
+                  color: playerColors[creationIndex],
+                  x: pos.x,
+                  y: pos.y,
+                  index: creationIndex,
+                  role: "unknown",
+                  revealed: false,
+                });
+                myName = "player " + (creationIndex + 1);
               });
-              myName = "player " + (creationIndex + 1);
-            });
 
-          //leaves the game
-          playerRef.onDisconnect().remove();
+            //leaves the game
+            playerRef.onDisconnect().remove();
 
-          initGame();
+            initGame();
+          });
         } else {
           //when game is full
           const characterElement = document.createElement("div");
