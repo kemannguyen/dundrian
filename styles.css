@@ -306,6 +306,12 @@ button.game_btn {
   left: 390;
   font-weight: bold;
 }
+.turn-text {
+  position: absolute;
+  top: 5;
+  left: 200;
+  font-weight: bold;
+}
 .img_dragon {
   width: 120px;
   height: 120px;
