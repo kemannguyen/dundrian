@@ -188,6 +188,9 @@ button.game_btn {
 .Character {
   transition: transform 0.4s;
 }
+.Dragon {
+  transition: transform 0.4s;
+}
 .Character.you {
   z-index: 1;
 }
@@ -222,13 +225,14 @@ button.game_btn {
 }
 .Select-arrow-dragon {
   display: block;
-  transform: scale(4);
-  width: 7px;
-  height: 5px;
-  background: url(/images/arrow.png) no-repeat no-repeat;
+  transform: scale(0.15);
+  margin-left: -250px;
+  margin-top: -250px;
+  width: 500px;
+  height: 500px;
+  background: url(/images/crosshair.png) no-repeat no-repeat;
   z-index: 30 !important;
   opacity: 1;
-  filter: hue-rotate(240deg);
 }
 .Select-arrow {
   display: block;
@@ -311,6 +315,9 @@ button.game_btn {
   top: 5;
   left: 200;
   font-weight: bold;
+  background-color: #474747a7;
+  padding: 4;
+  border-radius: 8px;
 }
 .img_dragon {
   width: 120px;
@@ -438,6 +445,12 @@ button.game_btn {
 }
 .Character[data-direction="left"] .Character_sprite {
   -webkit-transform: scaleX(-1);
+}
+.Dragon[data-direction="right"] .Character_sprite {
+  -webkit-transform: scaleX(-1);
+}
+.Dragon[data-direction="left"] .Character_sprite {
+  -webkit-transform: scaleX(1);
 }
 
 .Character_name-container {

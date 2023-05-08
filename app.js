@@ -83,6 +83,15 @@ function selectionFunction() {
       attackBtn.style.opacity = 0.8;
     }
   }
+  if (selectionIndex == 0) {
+    healBtn.disabled = true;
+    healBtn.style.opacity = 0.3;
+  } else {
+    if (yourTurn) {
+      healBtn.disabled = false;
+      healBtn.style.opacity = 0.8;
+    }
+  }
 }
 
 //Tracks when numberOfPlayers change
@@ -135,7 +144,7 @@ function numberOfPlayerFunction() {
       var selectionRef = firebase.database().ref(`players/${key}`);
       selectionRef.child("/hp").set(0);
     });
-    //change to true
+    //change to true WHEN YOU WANT GAME START TO BE ALBE TO START WITH RIGHT AMOUNT
     startBtn.disabled = false;
   }
   try {
@@ -149,6 +158,7 @@ function numberOfPlayerFunction() {
   let playersIndex = [];
   //character info for dom
   let players = {};
+  let selectionLock;
 
   //Button ref
   //const playerColorButton = document.querySelector("#player-color");
@@ -160,12 +170,16 @@ function numberOfPlayerFunction() {
   //dom elements
   let playerElements = {};
   let selectionArrow = document.getElementById("select-arrow");
+  let dragonSelection = document.getElementById("dragon-select");
 
   const gameContainer = document.querySelector(".game-container");
   const playerNameInput = document.querySelector("#player-name");
   let oldSelectIndex;
 
   function handleArrowPress(xChange = 0, yChange = 0) {
+    if (selectionLock) {
+      return;
+    }
     oldSelectIndex = selectionHook.selectionIndex;
     console.log(oldSelectIndex);
     if (yChange == -1) {
@@ -244,12 +258,28 @@ function numberOfPlayerFunction() {
   }
 
   function initGame() {
+    new KeyPressListener("ArrowUp", () => handleArrowPress(0, -1));
+    new KeyPressListener("ArrowDown", () => handleArrowPress(0, 1));
+    new KeyPressListener("ArrowLeft", () => handleArrowPress(-1, 0));
+    new KeyPressListener("ArrowRight", () => handleArrowPress(1, 0));
+
+    new KeyPressListener("KeyW", () => handleArrowPress(0, -1));
+    new KeyPressListener("KeyS", () => handleArrowPress(0, 1));
+    new KeyPressListener("KeyD", () => handleArrowPress(-1, 0));
+    new KeyPressListener("KeyA", () => handleArrowPress(1, 0));
+
     let realAction = true;
     attackBtn.disabled = true;
     attackBtn.style.opacity = 0.3;
 
+    //firebase ref
+    const gameRef = firebase.database().ref("game");
+    const dragonRef = firebase.database().ref("dundrian");
+    const allPlayersRef = firebase.database().ref("players");
+
     let confirmButton;
     let undoButton;
+
     //INIT HUD
     //creates player icon on top
     const nameTag = document.createElement("div");
@@ -331,32 +361,25 @@ function numberOfPlayerFunction() {
       if (snap.val() != null && snap.val() != 0) {
         console.log("new round", playersIndex);
         console.log(snap.val());
-        let test = playersIndex.pop();
+        let lastPlayer = playersIndex.pop();
         playersIndex.reverse();
-        playersIndex.push(test);
+        playersIndex.push(lastPlayer);
         playersIndex.reverse();
+        if (lastPlayer > 3) {
+          dragonRef.child("direction").set("right");
+        } else {
+          dragonRef.child("direction").set("left");
+        }
       }
       console.log("end result", playersIndex);
+      selectionLock = false;
+      let pos = setPosition(playersIndex[playersIndex.length - 1] + 1);
+      dragonSelection.style.top = 48 * pos.y - 400 + "px";
+      dragonSelection.style.left = 48 * pos.x - 560 + "px";
     });
 
-    new KeyPressListener("ArrowUp", () => handleArrowPress(0, -1));
-    new KeyPressListener("ArrowDown", () => handleArrowPress(0, 1));
-    new KeyPressListener("ArrowLeft", () => handleArrowPress(-1, 0));
-    new KeyPressListener("ArrowRight", () => handleArrowPress(1, 0));
-
-    new KeyPressListener("KeyW", () => handleArrowPress(0, -1));
-    new KeyPressListener("KeyS", () => handleArrowPress(0, 1));
-    new KeyPressListener("KeyD", () => handleArrowPress(-1, 0));
-    new KeyPressListener("KeyA", () => handleArrowPress(1, 0));
-
-    //GAME MANAGER
-    const gameRef = firebase.database().ref("game");
-
-    //DRAGON
-    const dragonRef = firebase.database().ref("dundrian");
-    const allPlayersRef = firebase.database().ref("players");
     const dragonElement = document.createElement("div");
-    dragonElement.classList.add("Character", "grid-cell");
+    dragonElement.classList.add("Dragon", "grid-cell");
 
     let dragon;
 
@@ -464,6 +487,7 @@ function numberOfPlayerFunction() {
             bosshealBtn.hidden = false;
             parryBtn.hidden = false;
             activateRoleBtn.hidden = false;
+            selectionFunction();
           }
         });
         //Change character if role activated
@@ -535,6 +559,9 @@ function numberOfPlayerFunction() {
       setTimeout(function () {
         if (playerClick != undefined) {
           playerClick.addEventListener("click", (e) => {
+            if (selectionLock) {
+              return;
+            }
             console.log(e.currentTarget.style.transform);
             Object.keys(players).forEach((key) => {
               let el = playerElements[key];
@@ -665,6 +692,7 @@ function numberOfPlayerFunction() {
 
     //GAME BUTTONS
     attackBtn.addEventListener("click", () => {
+      selectionLock = true;
       console.log("atack", selectionIndex);
       if (selectionIndex > 0) {
         Object.keys(players).forEach((key) => {
@@ -679,6 +707,10 @@ function numberOfPlayerFunction() {
             // }
             if (realAction) {
               gameRef.child(`${playerId}`).child("action").set({ attack: key });
+              bosshealBtn.disabled = true;
+              parryBtn.disabled = true;
+              bosshealBtn.style.opacity = 0.3;
+              parryBtn.style.opacity = 0.3;
             } else {
               gameRef
                 .child(`${playerId}`)
@@ -704,6 +736,7 @@ function numberOfPlayerFunction() {
       undoButton.hidden = false;
     });
     healBtn.addEventListener("click", () => {
+      selectionLock = true;
       console.log("heal", selectionIndex);
       //Heals player
       if (selectionIndex > 0) {
@@ -711,6 +744,10 @@ function numberOfPlayerFunction() {
           if (players[key].index + 1 == selectionIndex) {
             if (realAction) {
               gameRef.child(`${playerId}`).child("action").set({ heal: key });
+              bosshealBtn.disabled = true;
+              parryBtn.disabled = true;
+              bosshealBtn.style.opacity = 0.3;
+              parryBtn.style.opacity = 0.3;
             } else {
               gameRef
                 .child(`${playerId}`)
@@ -719,6 +756,17 @@ function numberOfPlayerFunction() {
             }
           }
         });
+      } else {
+        //if you pick dragon after pressing heal
+        console.log("WOWSIE");
+        if (realAction) {
+          gameRef.child(`${playerId}`).child("action").set({ heal: playerId });
+        } else {
+          gameRef
+            .child(`${playerId}`)
+            .child("fakeaction")
+            .set({ heal: playerId });
+        }
       }
       confirmButton.hidden = false;
       undoButton.hidden = false;
@@ -783,8 +831,7 @@ function numberOfPlayerFunction() {
         let newPlayerIndex;
         console.log("my player index", myPlayerIndex);
 
-        //starts from first and ends on last only
-        //NEED TO FIX THIS INTO ROTATION LOGIC
+        //Player order turn logic
         if (myPlayerIndex - 1 == playersIndex[playersIndex.length - 1]) {
           console.log("last", playersIndex[playersIndex.length - 1]);
           console.log("last p2", myPlayerIndex - 1);
@@ -805,15 +852,26 @@ function numberOfPlayerFunction() {
 
               if (action == "heal") {
                 let newHp;
-                allPlayersRef.child(target).once("value", (snap) => {
-                  newHp = snap.child("hp").val();
-                });
-                let diceThrow = parseInt(Math.random() * 6);
-                diceThrow += 1;
-                console.log(diceThrow);
-                newHp += diceThrow;
+                if (target != "dundrian") {
+                  allPlayersRef.child(target).once("value", (snap) => {
+                    newHp = snap.child("hp").val();
+                  });
+                  let diceThrow = parseInt(Math.random() * 6);
+                  diceThrow += 1;
+                  console.log(diceThrow);
+                  newHp += diceThrow;
 
-                allPlayersRef.child(target).child("hp").set(newHp);
+                  allPlayersRef.child(target).child("hp").set(newHp);
+                } else {
+                  dragonRef.on("value", (snap) => {
+                    newHp = snap.child("hp").val();
+                  });
+                  let diceThrow = parseInt(Math.random() * 6);
+                  diceThrow += 1;
+                  newHp += diceThrow;
+
+                  dragonRef.child("hp").set(newHp);
+                }
               }
               if (action == "attack") {
                 //player attack logic
@@ -830,7 +888,14 @@ function numberOfPlayerFunction() {
                   allPlayersRef.child(target).child("hp").set(newHp);
                 } else {
                   //dragon attack logic
-                  console.log("dragon attack");
+                  dragonRef.on("value", (snap) => {
+                    newHp = snap.child("hp").val();
+                  });
+                  let diceThrow = parseInt(Math.random() * 6);
+                  diceThrow += 1;
+                  newHp -= diceThrow;
+
+                  dragonRef.child("hp").set(newHp);
                 }
               }
               console.log("action", action);
@@ -856,10 +921,17 @@ function numberOfPlayerFunction() {
       }
     });
     undoButton.addEventListener("click", () => {
+      selectionLock = false;
       console.log("undo");
       realAction = true;
       gameRef.child(`${playerId}`).child("action").set({});
       gameRef.child(`${playerId}`).child("fakeaction").set({});
+      confirmButton.hidden = true;
+      undoButton.hidden = true;
+      bosshealBtn.disabled = false;
+      parryBtn.disabled = false;
+      bosshealBtn.style.opacity = 0.8;
+      parryBtn.style.opacity = 0.8;
     });
 
     //Stops the game when someone leaves
