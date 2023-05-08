@@ -146,6 +146,7 @@ function numberOfPlayerFunction() {
 (function () {
   let playerId;
   let playerRef;
+  let playersIndex = [];
   //character info for dom
   let players = {};
 
@@ -303,6 +304,7 @@ function numberOfPlayerFunction() {
 
     var playerTurnRef = firebase.database().ref(`game/playerTurn`);
     playerTurnRef.on("value", async (snapshot) => {
+      console.log("player turn change");
       playerTurnText.innerHTML = `
          <span class="turn-text" style="color:white"></span>
       `;
@@ -322,6 +324,20 @@ function numberOfPlayerFunction() {
     });
     undoButton = document.getElementById("undo-btn");
     confirmButton = document.getElementById("confirm-btn");
+
+    //arrange the player turn order, representing indexes
+    var endTurnRef = firebase.database().ref("game/turn");
+    endTurnRef.on("value", (snap) => {
+      if (snap.val() != null && snap.val() != 0) {
+        console.log("new round", playersIndex);
+        console.log(snap.val());
+        let test = playersIndex.pop();
+        playersIndex.reverse();
+        playersIndex.push(test);
+        playersIndex.reverse();
+      }
+      console.log("end result", playersIndex);
+    });
 
     new KeyPressListener("ArrowUp", () => handleArrowPress(0, -1));
     new KeyPressListener("ArrowDown", () => handleArrowPress(0, 1));
@@ -391,6 +407,9 @@ function numberOfPlayerFunction() {
       players = (await snapshot.val()) || {};
 
       Object.keys(players).forEach((key) => {
+        if (!playersIndex.includes(players[key].index)) {
+          playersIndex.push(players[key].index);
+        }
         const characterState = players[key];
         let el = playerElements[key];
         // Now update the DOM
@@ -429,25 +448,22 @@ function numberOfPlayerFunction() {
             parryBtn.style.opacity = 0.3;
           }
         });
+        //activates buttons when its your turn
         gameRef.on("value", (snapshot) => {
           if (snapshot.child("playerTurn").val() != myPlayerIndex - 1) {
             yourTurn = false;
-            attackBtn.disabled = true;
-            attackBtn.style.opacity = 0.3;
-            healBtn.disabled = true;
-            healBtn.style.opacity = 0.3;
-            bosshealBtn.disabled = true;
-            bosshealBtn.style.opacity = 0.3;
-            parryBtn.disabled = true;
-            parryBtn.style.opacity = 0.3;
+            attackBtn.hidden = true;
+            healBtn.hidden = true;
+            bosshealBtn.hidden = true;
+            parryBtn.hidden = true;
+            activateRoleBtn.hidden = true;
           } else {
             yourTurn = true;
-            healBtn.disabled = false;
-            healBtn.style.opacity = 0.8;
-            bosshealBtn.disabled = false;
-            bosshealBtn.style.opacity = 0.8;
-            parryBtn.disabled = false;
-            parryBtn.style.opacity = 0.8;
+            attackBtn.hidden = false;
+            healBtn.hidden = false;
+            bosshealBtn.hidden = false;
+            parryBtn.hidden = false;
+            activateRoleBtn.hidden = false;
           }
         });
         //Change character if role activated
@@ -557,6 +573,7 @@ function numberOfPlayerFunction() {
       console.log("PC_L", playerClicks.length);
       console.log("PC", playerClicks);
       numberOfPlayersHook.numberOfPlayers -= 1;
+      playersIndex.pop();
 
       //notify that player left
       notificationContent.innerHTML = snapshot.val().name + " left";
@@ -660,13 +677,6 @@ function numberOfPlayerFunction() {
             //   }, 2000);
             //   return;
             // }
-            var selectionRef = firebase.database().ref(`players/${key}`);
-            let newHp;
-            selectionRef.on("value", (snapshot) => {
-              newHp = snapshot.child("/hp").val();
-            });
-            newHp -= 5;
-            selectionRef.child("/hp").set(newHp);
             if (realAction) {
               gameRef.child(`${playerId}`).child("action").set({ attack: key });
             } else {
@@ -678,14 +688,6 @@ function numberOfPlayerFunction() {
           }
         });
       } else {
-        //change dragon hp
-        var selectionRef = firebase.database().ref(`dundrian`);
-        let newHp;
-        selectionRef.on("value", (snapshot) => {
-          newHp = snapshot.child("/hp").val();
-        });
-        newHp -= 5;
-        selectionRef.child("/hp").set(newHp);
         if (realAction) {
           gameRef
             .child(`${playerId}`)
@@ -723,7 +725,7 @@ function numberOfPlayerFunction() {
     });
     bosshealBtn.addEventListener("click", () => {
       console.log("boss heal", selectionIndex);
-
+      //console.log(playersIndex);
       //USE THIS AFTER ACTIONS HAS BEEN MADE
       confirmButton.hidden = false;
       undoButton.hidden = false;
@@ -775,13 +777,18 @@ function numberOfPlayerFunction() {
     });
 
     confirmButton.addEventListener("click", () => {
-      console.log("confirm");
+      console.log("confirm", playersIndex);
       //Next player turn
       if (!realAction) {
         let newPlayerIndex;
-        console.log(myPlayerIndex);
-        if (myPlayerIndex >= numberOfPlayersHook.numberOfPlayers) {
-          newPlayerIndex = 0;
+        console.log("my player index", myPlayerIndex);
+
+        //starts from first and ends on last only
+        //NEED TO FIX THIS INTO ROTATION LOGIC
+        if (myPlayerIndex - 1 == playersIndex[playersIndex.length - 1]) {
+          console.log("last", playersIndex[playersIndex.length - 1]);
+          console.log("last p2", myPlayerIndex - 1);
+          newPlayerIndex = playersIndex[playersIndex.length - 1];
           gameRef.once("value", (snap) => {
             gameRef.child("turn").set(snap.child("turn").val() + 1);
           });
@@ -808,12 +815,35 @@ function numberOfPlayerFunction() {
 
                 allPlayersRef.child(target).child("hp").set(newHp);
               }
+              if (action == "attack") {
+                //player attack logic
+                let newHp;
+                allPlayersRef.child(target).once("value", (snap) => {
+                  newHp = snap.child("hp").val();
+                });
+                if (newHp != undefined) {
+                  let diceThrow = parseInt(Math.random() * 6);
+                  diceThrow += 1;
+                  console.log(diceThrow);
+                  newHp -= diceThrow;
+
+                  allPlayersRef.child(target).child("hp").set(newHp);
+                } else {
+                  //dragon attack logic
+                  console.log("dragon attack");
+                }
+              }
               console.log("action", action);
               console.log("target", target);
             });
           });
         } else {
-          newPlayerIndex = myPlayerIndex;
+          if (myPlayerIndex == numberOfPlayersHook.numberOfPlayers) {
+            newPlayerIndex = 0;
+          } else {
+            console.log(numberOfPlayersHook.numberOfPlayers);
+            newPlayerIndex = myPlayerIndex;
+          }
         }
         gameRef.child("playerTurn").set(newPlayerIndex);
         realAction = true;
