@@ -233,6 +233,7 @@ button.game_btn {
   background: url(/images/crosshair.png) no-repeat no-repeat;
   z-index: 30 !important;
   opacity: 1;
+  pointer-events: none;
 }
 .Select-arrow {
   display: block;

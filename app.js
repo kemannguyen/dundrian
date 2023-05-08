@@ -756,17 +756,6 @@ function numberOfPlayerFunction() {
             }
           }
         });
-      } else {
-        //if you pick dragon after pressing heal
-        console.log("WOWSIE");
-        if (realAction) {
-          gameRef.child(`${playerId}`).child("action").set({ heal: playerId });
-        } else {
-          gameRef
-            .child(`${playerId}`)
-            .child("fakeaction")
-            .set({ heal: playerId });
-        }
       }
       confirmButton.hidden = false;
       undoButton.hidden = false;
