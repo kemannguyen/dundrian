@@ -114,46 +114,40 @@ function numberOfPlayerFunction() {
   allPlayersRef.on("value", (snapshot) => {
     players = snapshot.val() || {};
   });
-  let gg;
-  dragonRef2.child("start").on("value", (snap) => {
-    gg = snap.val();
-  });
-  if (!gg) {
+  //updates dragon hp
+  dragonRef2.child("/hp").set(40);
+
+  //updates player hp
+  Object.keys(players).forEach((key) => {
+    let el = document.querySelector(`#${key}`);
+    if (el != null) {
+      el.classList.remove("disabled");
+    }
+    console.log("=WAS", el);
     if (numberOfPlayersHook.numberOfPlayers == 4) {
       startBtn.disabled = false;
-      //updates dragon hp
       dragonRef2.child("/hp").set(40);
-
-      //updates player hp
-      Object.keys(players).forEach((key) => {
-        var selectionRef = firebase.database().ref(`players/${key}`);
-        selectionRef.child("/hp").set(25);
-      });
+      var selectionRef = firebase.database().ref(`players/${key}`);
+      selectionRef.child("/hp").set(25);
     } else if (numberOfPlayersHook.numberOfPlayers == 5) {
       startBtn.disabled = false;
       dragonRef2.child("/hp").set(50);
-
-      Object.keys(players).forEach((key) => {
-        var selectionRef = firebase.database().ref(`players/${key}`);
-        selectionRef.child("/hp").set(20);
-      });
+      var selectionRef = firebase.database().ref(`players/${key}`);
+      selectionRef.child("/hp").set(20);
     } else if (numberOfPlayersHook.numberOfPlayers > 5) {
       startBtn.disabled = false;
       dragonRef2.child("/hp").set(75);
-      Object.keys(players).forEach((key) => {
-        var selectionRef = firebase.database().ref(`players/${key}`);
-        selectionRef.child("/hp").set(20);
-      });
+      var selectionRef = firebase.database().ref(`players/${key}`);
+      selectionRef.child("/hp").set(20);
     } else {
-      dragonRef2.child("/hp").set(5);
-      Object.keys(players).forEach((key) => {
-        var selectionRef = firebase.database().ref(`players/${key}`);
-        selectionRef.child("/hp").set(1);
-      });
       //change to true WHEN YOU WANT GAME START TO BE ALBE TO START WITH RIGHT AMOUNT
       startBtn.disabled = false;
+      dragonRef2.child("/hp").set(5);
+      var selectionRef = firebase.database().ref(`players/${key}`);
+      selectionRef.child("/hp").set(1);
     }
-  }
+  });
+
   try {
     nameTag.querySelector(".profile-name").innerText = myName;
   } catch (e) {}
