@@ -148,7 +148,7 @@ function numberOfPlayerFunction() {
       dragonRef2.child("/hp").set(5);
       Object.keys(players).forEach((key) => {
         var selectionRef = firebase.database().ref(`players/${key}`);
-        selectionRef.child("/hp").set(5);
+        selectionRef.child("/hp").set(1);
       });
       //change to true WHEN YOU WANT GAME START TO BE ALBE TO START WITH RIGHT AMOUNT
       startBtn.disabled = false;
@@ -190,11 +190,24 @@ function numberOfPlayerFunction() {
     oldSelectIndex = selectionHook.selectionIndex;
     console.log(oldSelectIndex);
     if (yChange == -1) {
-      selectionHook.selectionIndex -= 1;
-      //skips dragon (index 0)
-      if (selectionHook.selectionIndex == 0 && oldSelectIndex == 1) {
-        console.log("w");
-        selectionHook.selectionIndex -= 1;
+      if (playersIndex.includes(selectionHook.selectionIndex - 1)) {
+        console.log("includes?", selectionHook.selectionIndex - 1);
+        console.log(playersIndex);
+        if (selectionHook.selectionIndex == 1) {
+          console.log("++");
+          let highestIndexPlayer = playersIndex.sort()[playersIndex.length - 1];
+          selectionHook.selectionIndex = highestIndexPlayer + 1;
+        } else {
+          //if (playersIndex[selectionHook.selectionIndex - 1] == undefined) {
+          let tempArr = playersIndex.sort();
+          let currIndex = playersIndex.findIndex(getIndexOf);
+          function getIndexOf(value) {
+            return value == selectionHook.selectionIndex - 1;
+          }
+          console.log("curr index", currIndex);
+          selectionHook.selectionIndex = tempArr[currIndex - 1] + 1;
+        }
+        console.log("new selection=", selectionHook.selectionIndex);
       }
     }
     if (yChange == 1) {
@@ -203,14 +216,22 @@ function numberOfPlayerFunction() {
         console.log(playersIndex);
         console.log(
           "new selection=",
-          playersIndex[selectionHook.selectionIndex] + 1
+          playersIndex[selectionHook.selectionIndex]
         );
-        selectionHook.selectionIndex =
-          playersIndex[selectionHook.selectionIndex] + 1;
+        if (playersIndex[selectionHook.selectionIndex] == undefined) {
+          console.log("++");
+          let lowestIndexPlayer = playersIndex.sort()[0];
+          selectionHook.selectionIndex = lowestIndexPlayer + 1;
+        } else {
+          console.log("===", playersIndex[selectionHook.selectionIndex] + 1);
+          selectionHook.selectionIndex =
+            playersIndex[selectionHook.selectionIndex] + 1;
+        }
       }
       //selectionHook.selectionIndex += 1;
 
       //skips dragon (index 0)
+      /*
       if (selectionHook.selectionIndex > numberOfPlayersHook.numberOfPlayers) {
         console.log("Z");
         selectionHook.selectionIndex =
@@ -224,15 +245,19 @@ function numberOfPlayerFunction() {
         console.log("Q");
         selectionHook.selectionIndex += 1;
       }
+      */
     }
     if (xChange == -1) {
       if (
         selectionHook.selectionIndex >= 1 &&
         selectionHook.selectionIndex <= 4
       ) {
-        selectionHook.selectionIndex = oldSelectIndex;
+        return;
       } else if (selectionHook.selectionIndex == 0) {
-        selectionHook.selectionIndex = 1;
+        let lowestIndexPlayer = playersIndex.sort()[0];
+        if (lowestIndexPlayer < 4) {
+          selectionHook.selectionIndex = lowestIndexPlayer + 1;
+        }
       } else {
         selectionHook.selectionIndex = 0;
       }
@@ -244,14 +269,20 @@ function numberOfPlayerFunction() {
       ) {
         selectionHook.selectionIndex = 0;
       } else if (selectionHook.selectionIndex == 0) {
-        if (numberOfPlayersHook.numberOfPlayers > 4) {
-          selectionHook.selectionIndex = 5;
+        let tempArr = playersIndex.sort();
+        let currIndex = playersIndex.findIndex(getIndexOf);
+        function getIndexOf(value) {
+          return value >= 4;
+        }
+        let lowestIndexRightSidePlayer = tempArr[currIndex];
+        if (lowestIndexRightSidePlayer >= 4) {
+          selectionHook.selectionIndex = lowestIndexRightSidePlayer + 1;
         }
       }
     }
 
-    selectionHook.selectionIndex =
-      selectionHook.selectionIndex % (numberOfPlayersHook.numberOfPlayers + 1);
+    //selectionHook.selectionIndex =
+    //selectionHook.selectionIndex % (numberOfPlayersHook.numberOfPlayers + 1);
     if (selectionHook.selectionIndex == -0) {
       //selectionIndex = 0;
     }
@@ -480,6 +511,7 @@ function numberOfPlayerFunction() {
         //activates role button at gamestart
         dragonRef.child("start").on("value", (snapshot) => {
           if (snapshot.val()) {
+            playersIndex.sort();
             console.log("START");
             activateRoleBtn.disabled = false;
             activateRoleBtn.style.opacity = 0.8;
