@@ -109,48 +109,6 @@ Object.defineProperty(numberOfPlayersHook, "numberOfPlayers", {
 
 function numberOfPlayerFunction() {
   console.log("change player num", numberOfPlayersHook.numberOfPlayers);
-  let players = {};
-  const allPlayersRef = firebase.database().ref("players");
-  allPlayersRef.on("value", (snapshot) => {
-    players = snapshot.val() || {};
-  });
-  //updates dragon hp
-  dragonRef2.child("/hp").set(40);
-
-  //updates player hp
-  Object.keys(players).forEach((key) => {
-    let el = document.querySelector(`#${key}`);
-    if (el != null) {
-      el.classList.remove("disabled");
-    }
-    console.log("=WAS", el);
-    if (numberOfPlayersHook.numberOfPlayers == 4) {
-      startBtn.disabled = false;
-      dragonRef2.child("/hp").set(40);
-      var selectionRef = firebase.database().ref(`players/${key}`);
-      selectionRef.child("/hp").set(25);
-    } else if (numberOfPlayersHook.numberOfPlayers == 5) {
-      startBtn.disabled = false;
-      dragonRef2.child("/hp").set(50);
-      var selectionRef = firebase.database().ref(`players/${key}`);
-      selectionRef.child("/hp").set(20);
-    } else if (numberOfPlayersHook.numberOfPlayers > 5) {
-      startBtn.disabled = false;
-      dragonRef2.child("/hp").set(75);
-      var selectionRef = firebase.database().ref(`players/${key}`);
-      selectionRef.child("/hp").set(20);
-    } else {
-      //change to true WHEN YOU WANT GAME START TO BE ALBE TO START WITH RIGHT AMOUNT
-      startBtn.disabled = false;
-      dragonRef2.child("/hp").set(5);
-      var selectionRef = firebase.database().ref(`players/${key}`);
-      selectionRef.child("/hp").set(1);
-    }
-  });
-
-  try {
-    nameTag.querySelector(".profile-name").innerText = myName;
-  } catch (e) {}
 }
 
 (function () {
@@ -399,8 +357,8 @@ function numberOfPlayerFunction() {
 
     //arrange the player turn order, representing indexes
     var endTurnRef = firebase.database().ref("game/turn");
-    endTurnRef.on("value", (snap) => {
-      if (snap.val() != null && snap.val() != 0) {
+    endTurnRef.on("value", async (snap) => {
+      if ((await snap.val()) != null && (await snap.val()) != 0) {
         console.log("new round", playersIndex);
         console.log("playerTurn: ", snap.val());
         let lastPlayer = playersIndex.pop();
@@ -414,6 +372,11 @@ function numberOfPlayerFunction() {
         }
       }
       console.log("end result", playersIndex);
+      console.log("NUM PLAYERS", numberOfPlayersHook.numberOfPlayers);
+      bosshealBtn.disabled = false;
+      bosshealBtn.style.opacity = 0.8;
+      parryBtn.disabled = false;
+      parryBtn.style.opacity = 0.8;
       selectionLock = false;
       let pos = setPosition(playersIndex[playersIndex.length - 1] + 1);
       dragonSelection.style.top = 48 * pos.y - 400 + "px";
@@ -471,7 +434,13 @@ function numberOfPlayerFunction() {
     //runs when a change occurs in the DB
     allPlayersRef.on("value", async (snapshot) => {
       players = (await snapshot.val()) || {};
-
+      console.log("snap", await snapshot.numChildren());
+      dragonRef.child("start").on("value", async (snap) => {
+        if ((await snap.val()) == false) {
+          console.log("ONLY ONCEEE", snap.val());
+          numberOfPlayersHook.numberOfPlayers = snapshot.numChildren();
+        }
+      });
       Object.keys(players).forEach((key) => {
         if (!playersIndex.includes(players[key].index) && players[key].hp > 0) {
           console.log("added PI", players[key].index);
@@ -502,39 +471,10 @@ function numberOfPlayerFunction() {
             numberOfPlayersHook.numberOfPlayers--;
           }
         } catch (e) {}
-        //activates role button at gamestart
-        dragonRef.child("start").on("value", (snapshot) => {
-          if (snapshot.val()) {
-            playersIndex.sort();
-            console.log("START");
-            activateRoleBtn.disabled = false;
-            activateRoleBtn.style.opacity = 0.8;
-            startBtn.disabled = true;
-            healBtn.disabled = false;
-            healBtn.style.opacity = 0.8;
-            bosshealBtn.disabled = false;
-            bosshealBtn.style.opacity = 0.8;
-            parryBtn.disabled = false;
-            parryBtn.style.opacity = 0.8;
-            dragonSelection.hidden = false;
-          } else {
-            activateRoleBtn.disabled = true;
-            activateRoleBtn.style.opacity = 0.3;
-            startBtn.disabled = false;
-            attackBtn.disabled = true;
-            attackBtn.style.opacity = 0.3;
-            healBtn.disabled = true;
-            healBtn.style.opacity = 0.3;
-            bosshealBtn.disabled = true;
-            bosshealBtn.style.opacity = 0.3;
-            parryBtn.disabled = true;
-            parryBtn.style.opacity = 0.3;
-            dragonSelection.hidden = true;
-          }
-        });
+
         //activates buttons when its your turn
-        gameRef.on("value", (snapshot) => {
-          if (snapshot.child("playerTurn").val() != myPlayerIndex - 1) {
+        gameRef.on("value", async (snapshot) => {
+          if ((await snapshot.child("playerTurn").val()) != myPlayerIndex - 1) {
             yourTurn = false;
             attackBtn.hidden = true;
             healBtn.hidden = true;
@@ -572,7 +512,6 @@ function numberOfPlayerFunction() {
     //runs when a new node is added to the tree in the DB
     allPlayersRef.on("child_added", async (snapshot) => {
       console.log("num", numberOfPlayersHook.numberOfPlayers);
-
       const addedPlayer = await snapshot.val();
       console.log("A_P = P_K", addedPlayer);
       const characterElement = document.createElement("div");
@@ -644,12 +583,12 @@ function numberOfPlayerFunction() {
       }, 2000);
       console.log("player click num", playerClicks.length);
       console.log("added player", snapshot.key);
-      numberOfPlayersHook.numberOfPlayers += 1;
+      numberOfPlayersHook.numberOfPlayers++;
     });
 
     //Remove character DOM element after they leave
-    allPlayersRef.on("child_removed", (snapshot) => {
-      const removedKey = snapshot.val().id;
+    allPlayersRef.on("child_removed", async (snapshot) => {
+      const removedKey = await snapshot.val().id;
       console.log("snap", playerElements[removedKey]);
       var index = playerClicks.indexOf(playerElements[removedKey]);
       if (index > -1) {
@@ -659,7 +598,7 @@ function numberOfPlayerFunction() {
       delete playerElements[removedKey];
       console.log("PC_L", playerClicks.length);
       console.log("PC", playerClicks);
-      numberOfPlayersHook.numberOfPlayers -= 1;
+      numberOfPlayersHook.numberOfPlayers--;
       playersIndex.pop();
 
       //notify that player left
@@ -683,8 +622,80 @@ function numberOfPlayerFunction() {
       }
     });
 
+    //activates role button at gamestart
+    dragonRef.child("start").on("value", async (snapshot) => {
+      if (await snapshot.val()) {
+        playersIndex.sort();
+        console.log("START");
+        let players2 = {};
+        const allPlayersRef2 = firebase.database().ref("players");
+        allPlayersRef2.on("value", (snapshot) => {
+          players2 = snapshot.val() || {};
+        });
+
+        //updates player hp
+        Object.keys(players2).forEach((key) => {
+          let el = document.querySelector(`#${key}`);
+          if (el != null) {
+            el.classList.remove("disabled");
+          }
+          console.log("=WAS", el);
+          if (numberOfPlayersHook.numberOfPlayers == 4) {
+            startBtn.disabled = false;
+            dragonRef2.child("/hp").set(40);
+            var selectionRef = firebase.database().ref(`players/${key}`);
+            selectionRef.child("/hp").set(25);
+          } else if (numberOfPlayersHook.numberOfPlayers == 5) {
+            startBtn.disabled = false;
+            dragonRef2.child("/hp").set(50);
+            var selectionRef = firebase.database().ref(`players/${key}`);
+            selectionRef.child("/hp").set(20);
+          } else if (numberOfPlayersHook.numberOfPlayers > 5) {
+            startBtn.disabled = false;
+            dragonRef2.child("/hp").set(75);
+            var selectionRef = firebase.database().ref(`players/${key}`);
+            selectionRef.child("/hp").set(20);
+          } else {
+            //change to true WHEN YOU WANT GAME START TO BE ALBE TO START WITH RIGHT AMOUNT
+            startBtn.disabled = false;
+            dragonRef2.child("/hp").set(5);
+            var selectionRef = firebase.database().ref(`players/${key}`);
+            selectionRef.child("/hp").set(2);
+          }
+        });
+
+        try {
+          nameTag.querySelector(".profile-name").innerText = myName;
+        } catch (e) {}
+
+        activateRoleBtn.disabled = false;
+        activateRoleBtn.style.opacity = 0.8;
+        startBtn.disabled = true;
+        healBtn.disabled = false;
+        healBtn.style.opacity = 0.8;
+        bosshealBtn.disabled = false;
+        bosshealBtn.style.opacity = 0.8;
+        parryBtn.disabled = false;
+        parryBtn.style.opacity = 0.8;
+        dragonSelection.hidden = false;
+      } else {
+        activateRoleBtn.disabled = true;
+        activateRoleBtn.style.opacity = 0.3;
+        startBtn.disabled = false;
+        attackBtn.disabled = true;
+        attackBtn.style.opacity = 0.3;
+        healBtn.disabled = true;
+        healBtn.style.opacity = 0.3;
+        bosshealBtn.disabled = true;
+        bosshealBtn.style.opacity = 0.3;
+        parryBtn.disabled = true;
+        parryBtn.style.opacity = 0.3;
+        dragonSelection.hidden = true;
+      }
+    });
+
     startBtn.addEventListener("click", () => {
-      console.log("hello there" + myPlayerIndex, selectionIndex);
+      console.log("hello there", numberOfPlayersHook.numberOfPlayers);
 
       //Randomize roles to the players in the game
       let roleArr = [];
@@ -1049,7 +1060,7 @@ function numberOfPlayerFunction() {
             ref2
               .once("value")
               .then(function (snapshot) {
-                numberOfPlayersHook.numberOfPlayers = 0;
+                numberOfPlayersHook.numberOfPlayers = snapshot.numChildren();
                 pos = setPosition(creationIndex + 1);
                 selectionIndex = creationIndex + 1;
                 myPlayerIndex = selectionIndex;
@@ -1061,7 +1072,7 @@ function numberOfPlayerFunction() {
                 playerRef.set({
                   id: playerId,
                   name: "player " + (creationIndex + 1),
-                  hp: 20,
+                  hp: 1,
                   color: playerColors[creationIndex],
                   x: pos.x,
                   y: pos.y,
