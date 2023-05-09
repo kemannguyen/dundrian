@@ -114,40 +114,45 @@ function numberOfPlayerFunction() {
   allPlayersRef.on("value", (snapshot) => {
     players = snapshot.val() || {};
   });
+  let gg;
+  dragonRef2.child("start").on("value", (snap) => {
+    gg = snap.val();
+  });
+  if (!gg) {
+    if (numberOfPlayersHook.numberOfPlayers == 4) {
+      startBtn.disabled = false;
+      //updates dragon hp
+      dragonRef2.child("/hp").set(40);
 
-  if (numberOfPlayersHook.numberOfPlayers == 4) {
-    startBtn.disabled = false;
-    //updates dragon hp
-    dragonRef2.child("/hp").set(40);
+      //updates player hp
+      Object.keys(players).forEach((key) => {
+        var selectionRef = firebase.database().ref(`players/${key}`);
+        selectionRef.child("/hp").set(25);
+      });
+    } else if (numberOfPlayersHook.numberOfPlayers == 5) {
+      startBtn.disabled = false;
+      dragonRef2.child("/hp").set(50);
 
-    //updates player hp
-    Object.keys(players).forEach((key) => {
-      var selectionRef = firebase.database().ref(`players/${key}`);
-      selectionRef.child("/hp").set(25);
-    });
-  } else if (numberOfPlayersHook.numberOfPlayers == 5) {
-    startBtn.disabled = false;
-    dragonRef2.child("/hp").set(50);
-
-    Object.keys(players).forEach((key) => {
-      var selectionRef = firebase.database().ref(`players/${key}`);
-      selectionRef.child("/hp").set(20);
-    });
-  } else if (numberOfPlayersHook.numberOfPlayers > 5) {
-    startBtn.disabled = false;
-    dragonRef2.child("/hp").set(75);
-    Object.keys(players).forEach((key) => {
-      var selectionRef = firebase.database().ref(`players/${key}`);
-      selectionRef.child("/hp").set(20);
-    });
-  } else {
-    dragonRef2.child("/hp").set(0);
-    Object.keys(players).forEach((key) => {
-      var selectionRef = firebase.database().ref(`players/${key}`);
-      selectionRef.child("/hp").set(5);
-    });
-    //change to true WHEN YOU WANT GAME START TO BE ALBE TO START WITH RIGHT AMOUNT
-    startBtn.disabled = false;
+      Object.keys(players).forEach((key) => {
+        var selectionRef = firebase.database().ref(`players/${key}`);
+        selectionRef.child("/hp").set(20);
+      });
+    } else if (numberOfPlayersHook.numberOfPlayers > 5) {
+      startBtn.disabled = false;
+      dragonRef2.child("/hp").set(75);
+      Object.keys(players).forEach((key) => {
+        var selectionRef = firebase.database().ref(`players/${key}`);
+        selectionRef.child("/hp").set(20);
+      });
+    } else {
+      dragonRef2.child("/hp").set(5);
+      Object.keys(players).forEach((key) => {
+        var selectionRef = firebase.database().ref(`players/${key}`);
+        selectionRef.child("/hp").set(5);
+      });
+      //change to true WHEN YOU WANT GAME START TO BE ALBE TO START WITH RIGHT AMOUNT
+      startBtn.disabled = false;
+    }
   }
   try {
     nameTag.querySelector(".profile-name").innerText = myName;
@@ -193,10 +198,21 @@ function numberOfPlayerFunction() {
       }
     }
     if (yChange == 1) {
-      selectionHook.selectionIndex += 1;
+      if (playersIndex.includes(selectionHook.selectionIndex - 1)) {
+        console.log("includes?", selectionHook.selectionIndex - 1);
+        console.log(playersIndex);
+        console.log(
+          "new selection=",
+          playersIndex[selectionHook.selectionIndex] + 1
+        );
+        selectionHook.selectionIndex =
+          playersIndex[selectionHook.selectionIndex] + 1;
+      }
+      //selectionHook.selectionIndex += 1;
 
       //skips dragon (index 0)
       if (selectionHook.selectionIndex > numberOfPlayersHook.numberOfPlayers) {
+        console.log("Z");
         selectionHook.selectionIndex =
           selectionHook.selectionIndex %
           (numberOfPlayersHook.numberOfPlayers + 1);
@@ -433,6 +449,7 @@ function numberOfPlayerFunction() {
 
       Object.keys(players).forEach((key) => {
         if (!playersIndex.includes(players[key].index) && players[key].hp > 0) {
+          console.log("added PI", players[key].index);
           playersIndex.push(players[key].index);
         }
         const characterState = players[key];
@@ -449,11 +466,15 @@ function numberOfPlayerFunction() {
           el.style.transform = `translate3d(${left}, ${top}, 0)`;
           if (players[key].hp <= 0) {
             console.log("TRIED");
-            playersIndex = playersIndex.filter(function (index) {
-              return index !== players[key].index;
-            });
-            console.log("123123", playersIndex);
+
+            let fpi = playersIndex.filter((e) => e !== players[key].index);
+            //playersIndex = filteredplayerIndex;
+            console.log("1111", fpi);
+            playersIndex.length = 0;
+            playersIndex = [...fpi];
+            console.log("2222", playersIndex);
             el.classList.add("disabled");
+            numberOfPlayersHook.numberOfPlayers--;
           }
         } catch (e) {}
         //activates role button at gamestart
