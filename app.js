@@ -73,7 +73,7 @@ Object.defineProperty(selectionHook, "selectionIndex", {
 
 function selectionFunction() {
   console.log("valueA changed:", selectionIndex);
-  if (selectionIndex == myPlayerIndex) {
+  if (selectionHook.selectionIndex == myPlayerIndex) {
     attackBtn.disabled = true;
     attackBtn.style.opacity = 0.3;
     console.log("true");
@@ -83,11 +83,12 @@ function selectionFunction() {
       attackBtn.style.opacity = 0.8;
     }
   }
-  if (selectionIndex == 0) {
+  if (selectionHook.selectionIndex == 0) {
     healBtn.disabled = true;
     healBtn.style.opacity = 0.3;
   } else {
     if (yourTurn) {
+      console.log(">>>>", selectionHook.selectionIndex);
       healBtn.disabled = false;
       healBtn.style.opacity = 0.8;
     }
@@ -107,6 +108,7 @@ Object.defineProperty(numberOfPlayersHook, "numberOfPlayers", {
 });
 
 function numberOfPlayerFunction() {
+  console.log("change player num", numberOfPlayersHook.numberOfPlayers);
   let players = {};
   const allPlayersRef = firebase.database().ref("players");
   allPlayersRef.on("value", (snapshot) => {
@@ -142,7 +144,7 @@ function numberOfPlayerFunction() {
     dragonRef2.child("/hp").set(0);
     Object.keys(players).forEach((key) => {
       var selectionRef = firebase.database().ref(`players/${key}`);
-      selectionRef.child("/hp").set(0);
+      selectionRef.child("/hp").set(5);
     });
     //change to true WHEN YOU WANT GAME START TO BE ALBE TO START WITH RIGHT AMOUNT
     startBtn.disabled = false;
@@ -184,7 +186,6 @@ function numberOfPlayerFunction() {
     console.log(oldSelectIndex);
     if (yChange == -1) {
       selectionHook.selectionIndex -= 1;
-
       //skips dragon (index 0)
       if (selectionHook.selectionIndex == 0 && oldSelectIndex == 1) {
         console.log("w");
@@ -346,7 +347,7 @@ function numberOfPlayerFunction() {
           activePlayerName = players[key].name;
         }
       });
-      console.log(activePlayerIndex);
+      console.log("current player", activePlayerIndex);
       if (activePlayerName != "") {
         playerTurnText.querySelector(".turn-text").innerText =
           activePlayerName + "'s turn";
@@ -360,7 +361,7 @@ function numberOfPlayerFunction() {
     endTurnRef.on("value", (snap) => {
       if (snap.val() != null && snap.val() != 0) {
         console.log("new round", playersIndex);
-        console.log(snap.val());
+        console.log("playerTurn: ", snap.val());
         let lastPlayer = playersIndex.pop();
         playersIndex.reverse();
         playersIndex.push(lastPlayer);
@@ -396,6 +397,7 @@ function numberOfPlayerFunction() {
 
       //players[key]
       console.log("dragon = players[key]", dragon);
+      console.log("sel index", selectionIndex);
       //player el
       console.log("dragonEL = player EL", dragonElement);
       dragonElement.innerHTML = `
@@ -430,24 +432,34 @@ function numberOfPlayerFunction() {
       players = (await snapshot.val()) || {};
 
       Object.keys(players).forEach((key) => {
-        if (!playersIndex.includes(players[key].index)) {
+        if (!playersIndex.includes(players[key].index) && players[key].hp > 0) {
           playersIndex.push(players[key].index);
         }
         const characterState = players[key];
-        let el = playerElements[key];
-        // Now update the DOM
-        el.querySelector(".Character_name").innerText = characterState.name;
-        el.querySelector(".Character_hp").innerText = characterState.hp;
-        el.setAttribute("data-color", characterState.color);
+        try {
+          let el = playerElements[key];
+          // Now update the DOM
+          el.querySelector(".Character_name").innerText = characterState.name;
+          el.querySelector(".Character_hp").innerText = characterState.hp;
+          el.setAttribute("data-color", characterState.color);
 
-        const left = 16 * characterState.x + "px";
-        const top = 16 * characterState.y - 4 + "px";
+          const left = 16 * characterState.x + "px";
+          const top = 16 * characterState.y - 4 + "px";
 
-        el.style.transform = `translate3d(${left}, ${top}, 0)`;
-
+          el.style.transform = `translate3d(${left}, ${top}, 0)`;
+          if (players[key].hp <= 0) {
+            console.log("TRIED");
+            playersIndex = playersIndex.filter(function (index) {
+              return index !== players[key].index;
+            });
+            console.log("123123", playersIndex);
+            el.classList.add("disabled");
+          }
+        } catch (e) {}
         //activates role button at gamestart
-        dragonRef.on("value", (snapshot) => {
-          if (snapshot.child("start").val()) {
+        dragonRef.child("start").on("value", (snapshot) => {
+          if (snapshot.val()) {
+            console.log("START");
             activateRoleBtn.disabled = false;
             activateRoleBtn.style.opacity = 0.8;
             startBtn.disabled = true;
@@ -457,6 +469,7 @@ function numberOfPlayerFunction() {
             bosshealBtn.style.opacity = 0.8;
             parryBtn.disabled = false;
             parryBtn.style.opacity = 0.8;
+            dragonSelection.hidden = false;
           } else {
             activateRoleBtn.disabled = true;
             activateRoleBtn.style.opacity = 0.3;
@@ -469,6 +482,7 @@ function numberOfPlayerFunction() {
             bosshealBtn.style.opacity = 0.3;
             parryBtn.disabled = true;
             parryBtn.style.opacity = 0.3;
+            dragonSelection.hidden = true;
           }
         });
         //activates buttons when its your turn
@@ -509,10 +523,10 @@ function numberOfPlayerFunction() {
     });
 
     //runs when a new node is added to the tree in the DB
-    allPlayersRef.on("child_added", (snapshot) => {
+    allPlayersRef.on("child_added", async (snapshot) => {
       console.log("num", numberOfPlayersHook.numberOfPlayers);
 
-      const addedPlayer = snapshot.val();
+      const addedPlayer = await snapshot.val();
       console.log("A_P = P_K", addedPlayer);
       const characterElement = document.createElement("div");
       characterElement.classList.add("Character", "grid-cell");
@@ -551,9 +565,7 @@ function numberOfPlayerFunction() {
       //player click function
       let playerClick;
 
-      setInterval(function () {
-        playerClick = document.querySelector(`#${addedPlayer.id}`);
-      }, 200);
+      playerClick = document.querySelector(`#${addedPlayer.id}`);
 
       //selects the player and moves the arrow to the pressed one
       setTimeout(function () {
@@ -583,7 +595,8 @@ function numberOfPlayerFunction() {
           playerClicks.push(playerClick);
         }
       }, 2000);
-      console.log(playerClicks.length);
+      console.log("player click num", playerClicks.length);
+      console.log("added player", snapshot.key);
       numberOfPlayersHook.numberOfPlayers += 1;
     });
 
@@ -694,6 +707,7 @@ function numberOfPlayerFunction() {
     attackBtn.addEventListener("click", () => {
       selectionLock = true;
       console.log("atack", selectionIndex);
+      //attack player
       if (selectionIndex > 0) {
         Object.keys(players).forEach((key) => {
           if (players[key].index + 1 == selectionIndex) {
@@ -719,7 +733,9 @@ function numberOfPlayerFunction() {
             }
           }
         });
-      } else {
+      }
+      //attack dragon
+      else {
         if (realAction) {
           gameRef
             .child(`${playerId}`)
@@ -895,7 +911,7 @@ function numberOfPlayerFunction() {
           if (myPlayerIndex == numberOfPlayersHook.numberOfPlayers) {
             newPlayerIndex = 0;
           } else {
-            console.log(numberOfPlayersHook.numberOfPlayers);
+            console.log("elseSTAT", numberOfPlayersHook.numberOfPlayers);
             newPlayerIndex = myPlayerIndex;
           }
         }
@@ -986,8 +1002,7 @@ function numberOfPlayerFunction() {
             ref2
               .once("value")
               .then(function (snapshot) {
-                numberOfPlayersHook.numberOfPlayers = snapshot.numChildren();
-
+                numberOfPlayersHook.numberOfPlayers = 0;
                 pos = setPosition(creationIndex + 1);
                 selectionIndex = creationIndex + 1;
                 myPlayerIndex = selectionIndex;

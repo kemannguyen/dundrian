@@ -497,3 +497,7 @@ button.game_btn {
   margin-left: 1px;
   color: red;
 }
+.disabled {
+  pointer-events: none;
+  background-color: red;
+}
