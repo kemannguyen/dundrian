@@ -469,6 +469,9 @@ function numberOfPlayerFunction() {
             console.log("2222", playersIndex);
             el.classList.add("disabled");
             numberOfPlayersHook.numberOfPlayers--;
+            if (numberOfPlayersHook.numberOfPlayers == 0) {
+              dragonRef.child("start").set(false);
+            }
           }
         } catch (e) {}
 
@@ -961,6 +964,9 @@ function numberOfPlayerFunction() {
                   newHp -= diceThrow;
 
                   dragonRef.child("hp").set(newHp);
+                  if (newHp <= 0) {
+                    dragonRef.child("start").set(false);
+                  }
                 }
               }
               console.log("action", action);
