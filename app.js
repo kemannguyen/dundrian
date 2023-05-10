@@ -265,8 +265,8 @@ function numberOfPlayerFunction() {
 
     new KeyPressListener("KeyW", () => handleArrowPress(0, -1));
     new KeyPressListener("KeyS", () => handleArrowPress(0, 1));
-    new KeyPressListener("KeyD", () => handleArrowPress(-1, 0));
-    new KeyPressListener("KeyA", () => handleArrowPress(1, 0));
+    new KeyPressListener("KeyA", () => handleArrowPress(-1, 0));
+    new KeyPressListener("KeyD", () => handleArrowPress(1, 0));
 
     let realAction = true;
     attackBtn.disabled = true;
@@ -966,12 +966,13 @@ function numberOfPlayerFunction() {
             });
           });
         } else {
-          if (myPlayerIndex == numberOfPlayersHook.numberOfPlayers) {
-            newPlayerIndex = 0;
-          } else {
-            console.log("elseSTAT", numberOfPlayersHook.numberOfPlayers);
-            newPlayerIndex = myPlayerIndex;
+          //needs fixing
+          //find next player turn
+          let currIndex = playersIndex.findIndex(getIndexOf);
+          function getIndexOf(value) {
+            return value == myPlayerIndex - 1;
           }
+          newPlayerIndex = playersIndex[currIndex + 1];
         }
         gameRef.child("playerTurn").set(newPlayerIndex);
         realAction = true;
