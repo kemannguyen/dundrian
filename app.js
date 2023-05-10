@@ -272,6 +272,11 @@ function numberOfPlayerFunction() {
     attackBtn.disabled = true;
     attackBtn.style.opacity = 0.3;
 
+    var audio = document.getElementById("background");
+    audio.autoplay = true;
+    audio.loop = true;
+    audio.load();
+
     //firebase ref
     const gameRef = firebase.database().ref("game");
     const dragonRef = firebase.database().ref("dundrian");
@@ -423,6 +428,9 @@ function numberOfPlayerFunction() {
       dragonClick = document.querySelector("#dundrian");
 
       dragonClick.addEventListener("click", (e) => {
+        if (selectionLock) {
+          return;
+        }
         //DRAGON LOGIC
         const pos = setPosition(0);
         selectionArrow.style.left = 48 * pos.x - arrowXOffset + "px";

@@ -13,9 +13,6 @@
     <link rel="stylesheet" href="/styles.css" type="text/css" />
   </head>
   <body>
-    <audio id="backgroundMusic" controls autoplay>
-      <source src="/sounds/background.mp3" type="audio/mpeg" />
-    </audio>
     <div
       id="select-arrow"
       class="arrow-container"
@@ -77,6 +74,9 @@
       <label class="instruction-text" style="margin-left: 20"
         >Dundrian selection</label
       >
+      <audio id="background" style="margin-left: 100" controls autoplay loop>
+        <source src="/sounds/background.mp3" type="audio/mpeg" />
+      </audio>
     </div>
     <div class="game-start">
       <button
