@@ -630,15 +630,17 @@ function numberOfPlayerFunction() {
         let players2 = {};
         const allPlayersRef2 = firebase.database().ref("players");
         allPlayersRef2.on("value", (snapshot) => {
-          players2 = snapshot.val() || {};
+          players2 = snapshot.val();
         });
 
+        console.log("before super");
         //updates player hp
         Object.keys(players2).forEach((key) => {
+          console.log("SUPER");
           let el = document.querySelector(`#${key}`);
-          if (el != null) {
-            el.classList.remove("disabled");
-          }
+
+          el.classList.remove("disabled");
+
           console.log("=WAS", el);
           if (numberOfPlayersHook.numberOfPlayers == 4) {
             startBtn.disabled = false;
@@ -1044,6 +1046,8 @@ function numberOfPlayerFunction() {
       //creates new player in DB
       ref.once("value").then(function (snapshot) {
         numberOfPlayersHook.numberOfPlayers = snapshot.numChildren();
+
+        //blocks players from entering after a game is currently running
         if (numberOfPlayersHook.numberOfPlayers < MAX_PLAYERS) {
           dragonRef2.once("value").then(function (snap) {
             let gamestarted = snap.child("/start").val();
@@ -1061,6 +1065,7 @@ function numberOfPlayerFunction() {
             ref2
               .once("value")
               .then(function (snapshot) {
+                //data for local visuals
                 numberOfPlayersHook.numberOfPlayers = snapshot.numChildren();
                 pos = setPosition(creationIndex + 1);
                 selectionIndex = creationIndex + 1;
@@ -1069,7 +1074,7 @@ function numberOfPlayerFunction() {
                 selectionArrow.style.top = 48 * pos.y + arrowYOffset + "px";
               })
               .then(() => {
-                //visuals
+                //db data
                 playerRef.set({
                   id: playerId,
                   name: "player " + (creationIndex + 1),
