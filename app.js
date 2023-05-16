@@ -2,8 +2,8 @@ function getKeyString(x, y) {}
 
 const MAX_PLAYERS = 8;
 const MIN_PLAYERS = 4;
-const arrowXOffset = 570;
-const arrowYOffset = -490;
+const arrowXOffset = 490;
+const arrowYOffset = -440;
 let numberOfPlayers = 0;
 let selectionIndex = 0;
 let myPlayerIndex;
@@ -17,7 +17,7 @@ const healBtn = document.getElementById("heal-btn");
 const bosshealBtn = document.getElementById("boss-heal-btn");
 const parryBtn = document.getElementById("parry-btn");
 const activateRoleBtn = document.getElementById("activate-role-btn");
-
+const musicBtn = document.getElementById("music-btn");
 //firebase references
 let dragonRef2;
 
@@ -72,11 +72,9 @@ Object.defineProperty(selectionHook, "selectionIndex", {
 });
 
 function selectionFunction() {
-  console.log("valueA changed:", selectionIndex);
   if (selectionHook.selectionIndex == myPlayerIndex) {
     attackBtn.disabled = true;
     attackBtn.style.opacity = 0.3;
-    console.log("true");
   } else {
     if (yourTurn) {
       attackBtn.disabled = false;
@@ -88,7 +86,6 @@ function selectionFunction() {
     healBtn.style.opacity = 0.3;
   } else {
     if (yourTurn) {
-      console.log(">>>>", selectionHook.selectionIndex);
       healBtn.disabled = false;
       healBtn.style.opacity = 0.8;
     }
@@ -111,6 +108,16 @@ function numberOfPlayerFunction() {
   console.log("change player num", numberOfPlayersHook.numberOfPlayers);
 }
 
+const ListItem = (actor, img, target) => {
+  return `
+    <div>
+      <span class="listitem_title">${actor}</span>
+      <img class="action_img" src="${img}" />
+      <span class="listitem_title">${target}</span>
+    <div/>
+    `;
+};
+
 (function () {
   let playerId;
   let playerRef;
@@ -118,7 +125,6 @@ function numberOfPlayerFunction() {
   //character info for dom
   let players = {};
   let selectionLock;
-
   //Button ref
   //const playerColorButton = document.querySelector("#player-color");
   let dragonClick;
@@ -134,19 +140,18 @@ function numberOfPlayerFunction() {
   const gameContainer = document.querySelector(".game-container");
   const playerNameInput = document.querySelector("#player-name");
   let oldSelectIndex;
+  var audio = document.getElementById("background");
+  let musicEl = document.querySelector("#music-btn");
+  let actionListHTML = document.querySelector("#action_list");
 
   function handleArrowPress(xChange = 0, yChange = 0) {
     if (selectionLock) {
       return;
     }
     oldSelectIndex = selectionHook.selectionIndex;
-    console.log(oldSelectIndex);
     if (yChange == -1) {
       if (playersIndex.includes(selectionHook.selectionIndex - 1)) {
-        console.log("includes?", selectionHook.selectionIndex - 1);
-        console.log(playersIndex);
         if (selectionHook.selectionIndex == 1) {
-          console.log("++");
           let highestIndexPlayer = playersIndex.sort()[playersIndex.length - 1];
           selectionHook.selectionIndex = highestIndexPlayer + 1;
         } else {
@@ -156,48 +161,20 @@ function numberOfPlayerFunction() {
           function getIndexOf(value) {
             return value == selectionHook.selectionIndex - 1;
           }
-          console.log("curr index", currIndex);
           selectionHook.selectionIndex = tempArr[currIndex - 1] + 1;
         }
-        console.log("new selection=", selectionHook.selectionIndex);
       }
     }
     if (yChange == 1) {
       if (playersIndex.includes(selectionHook.selectionIndex - 1)) {
-        console.log("includes?", selectionHook.selectionIndex - 1);
-        console.log(playersIndex);
-        console.log(
-          "new selection=",
-          playersIndex[selectionHook.selectionIndex]
-        );
         if (playersIndex[selectionHook.selectionIndex] == undefined) {
-          console.log("++");
           let lowestIndexPlayer = playersIndex.sort()[0];
           selectionHook.selectionIndex = lowestIndexPlayer + 1;
         } else {
-          console.log("===", playersIndex[selectionHook.selectionIndex] + 1);
           selectionHook.selectionIndex =
             playersIndex[selectionHook.selectionIndex] + 1;
         }
       }
-      //selectionHook.selectionIndex += 1;
-
-      //skips dragon (index 0)
-      /*
-      if (selectionHook.selectionIndex > numberOfPlayersHook.numberOfPlayers) {
-        console.log("Z");
-        selectionHook.selectionIndex =
-          selectionHook.selectionIndex %
-          (numberOfPlayersHook.numberOfPlayers + 1);
-      }
-      if (
-        selectionHook.selectionIndex == 0 &&
-        oldSelectIndex == numberOfPlayersHook.numberOfPlayers
-      ) {
-        console.log("Q");
-        selectionHook.selectionIndex += 1;
-      }
-      */
     }
     if (xChange == -1) {
       if (
@@ -241,7 +218,6 @@ function numberOfPlayerFunction() {
     if (selectionHook.selectionIndex < 0) {
       selectionHook.selectionIndex = numberOfPlayersHook.numberOfPlayers;
     }
-    console.log("index", selectionHook.selectionIndex);
 
     //move to the next space
 
@@ -250,11 +226,9 @@ function numberOfPlayerFunction() {
 
     //players[playerId].hp = selectionIndex;
 
-    selectionArrow.style.left = 48 * xPos - arrowXOffset + "px";
-    selectionArrow.style.top = 48 * yPos + arrowYOffset + "px";
-    console.log(xPos, yPos);
+    selectionArrow.style.left = 43 * xPos - arrowXOffset + "px";
+    selectionArrow.style.top = 43 * yPos + arrowYOffset + "px";
     playerRef.set(players[playerId]);
-    console.log(selectionArrow);
   }
 
   function initGame() {
@@ -271,16 +245,13 @@ function numberOfPlayerFunction() {
     let realAction = true;
     attackBtn.disabled = true;
     attackBtn.style.opacity = 0.3;
-
-    var audio = document.getElementById("background");
-    audio.autoplay = true;
-    audio.loop = true;
-    audio.load();
+    //audio.play();
 
     //firebase ref
     const gameRef = firebase.database().ref("game");
     const dragonRef = firebase.database().ref("dundrian");
     const allPlayersRef = firebase.database().ref("players");
+    let actionList = [];
 
     let confirmButton;
     let undoButton;
@@ -314,9 +285,6 @@ function numberOfPlayerFunction() {
           "profile-ring-" + snapshot.child("color").val() + " grid-cell-profile"
         );
       nameTag.setAttribute("data-color", snapshot.child("color").val());
-
-      console.log("tag", nameTag);
-
       roleText.innerHTML = `
          <span class="role-text" style="color:white"></span>
       `;
@@ -337,9 +305,9 @@ function numberOfPlayerFunction() {
       `;
     gameContainer.appendChild(confirmActionsBtn);
 
+    //after each players turn
     var playerTurnRef = firebase.database().ref(`game/playerTurn`);
     playerTurnRef.on("value", async (snapshot) => {
-      console.log("player turn change");
       playerTurnText.innerHTML = `
          <span class="turn-text" style="color:white"></span>
       `;
@@ -351,21 +319,62 @@ function numberOfPlayerFunction() {
           activePlayerName = players[key].name;
         }
       });
-      console.log("current player", activePlayerIndex);
       if (activePlayerName != "") {
         playerTurnText.querySelector(".turn-text").innerText =
           activePlayerName + "'s turn";
       }
+      //load data make it into object array with actor, action and target
+
+      //add thing to list
+    });
+    gameRef.child("playerTurn").on("value", (s) => {
+      gameRef.on("value", (snap) => {
+        snap.forEach((child) => {
+          if (child.key != "playerTurn" && child.key != "turn") {
+            let string = JSON.stringify(child.child("fakeaction").val());
+            string = string.replace("{", "");
+            string = string.replace("}", "");
+            string = string.replaceAll('"', "");
+            let data = string.split(":");
+            let action = data[0];
+            let target = data[1];
+            console.log("child: fake action", action + " who?: " + target);
+            let actionItem;
+            try {
+              if (target != "dundrian") {
+                actionItem = `${players[child.key].name},${action},${
+                  players[target].name
+                }`;
+              } else {
+                actionItem = `${players[child.key].name},${action},${target}`;
+              }
+            } catch (e) {}
+            if (actionList.includes(actionItem)) {
+              console.log("already in");
+            } else if (target != undefined && action != undefined) {
+              console.log("ADDED ACTION");
+              actionList.push(actionItem);
+            }
+          }
+          console.log(actionList);
+        });
+      });
+      let listEl = "";
+      for (let i = 0; i < actionList.length; i++) {
+        let temp = actionList[i].split(",");
+        listEl += ListItem(temp[0], `/images/${temp[1]}.png`, temp[2]);
+      }
+      actionListHTML.innerHTML = listEl;
+      console.log("listel:", listEl);
     });
     undoButton = document.getElementById("undo-btn");
     confirmButton = document.getElementById("confirm-btn");
 
     //arrange the player turn order, representing indexes
+    //RUN after all players has done their actions
     var endTurnRef = firebase.database().ref("game/turn");
     endTurnRef.on("value", async (snap) => {
       if ((await snap.val()) != null && (await snap.val()) != 0) {
-        console.log("new round", playersIndex);
-        console.log("playerTurn: ", snap.val());
         let lastPlayer = playersIndex.pop();
         playersIndex.reverse();
         playersIndex.push(lastPlayer);
@@ -375,17 +384,18 @@ function numberOfPlayerFunction() {
         } else {
           dragonRef.child("direction").set("left");
         }
+        //remove and add fake action display
       }
-      console.log("end result", playersIndex);
-      console.log("NUM PLAYERS", numberOfPlayersHook.numberOfPlayers);
       bosshealBtn.disabled = false;
       bosshealBtn.style.opacity = 0.8;
       parryBtn.disabled = false;
       parryBtn.style.opacity = 0.8;
       selectionLock = false;
       let pos = setPosition(playersIndex[playersIndex.length - 1] + 1);
-      dragonSelection.style.top = 48 * pos.y - 400 + "px";
-      dragonSelection.style.left = 48 * pos.x - 560 + "px";
+      dragonSelection.style.top = 43 * pos.y - 350 + "px";
+      dragonSelection.style.left = 43 * pos.x - 490 + "px";
+      actionList.length = 0;
+      actionListHTML.innerHTML = "";
     });
 
     const dragonElement = document.createElement("div");
@@ -405,10 +415,11 @@ function numberOfPlayerFunction() {
       dragonElement.style.transform = `translate3d(${left}, ${top}, 0)`;
 
       //players[key]
-      console.log("dragon = players[key]", dragon);
-      console.log("sel index", selectionIndex);
+      //console.log("dragon = players[key]", dragon);
+      //console.log("sel index", selectionIndex);
       //player el
-      console.log("dragonEL = player EL", dragonElement);
+      //console.log("dragonEL = player EL", dragonElement);
+
       dragonElement.innerHTML = `
         <div  class="grid-cell-dragon"></div>
         <div class="Character_sprite grid-cell-dragon">
@@ -433,8 +444,8 @@ function numberOfPlayerFunction() {
         }
         //DRAGON LOGIC
         const pos = setPosition(0);
-        selectionArrow.style.left = 48 * pos.x - arrowXOffset + "px";
-        selectionArrow.style.top = 48 * pos.y + arrowYOffset + "px";
+        selectionArrow.style.left = 43 * pos.x - arrowXOffset + "px";
+        selectionArrow.style.top = 43 * pos.y + arrowYOffset + "px";
         selectionHook.selectionIndex = 0;
       });
     });
@@ -442,16 +453,14 @@ function numberOfPlayerFunction() {
     //runs when a change occurs in the DB
     allPlayersRef.on("value", async (snapshot) => {
       players = (await snapshot.val()) || {};
-      console.log("snap", await snapshot.numChildren());
       dragonRef.child("start").on("value", async (snap) => {
         if ((await snap.val()) == false) {
-          console.log("ONLY ONCEEE", snap.val());
+          console.log("ONLY ONCEEE start in allref", snap.val());
           numberOfPlayersHook.numberOfPlayers = snapshot.numChildren();
         }
       });
       Object.keys(players).forEach((key) => {
         if (!playersIndex.includes(players[key].index) && players[key].hp > 0) {
-          console.log("added PI", players[key].index);
           playersIndex.push(players[key].index);
         }
         const characterState = players[key];
@@ -467,15 +476,13 @@ function numberOfPlayerFunction() {
 
           el.style.transform = `translate3d(${left}, ${top}, 0)`;
           if (players[key].hp <= 0) {
-            console.log("TRIED");
-
             let fpi = playersIndex.filter((e) => e !== players[key].index);
             //playersIndex = filteredplayerIndex;
-            console.log("1111", fpi);
             playersIndex.length = 0;
             playersIndex = [...fpi];
-            console.log("2222", playersIndex);
             el.classList.add("disabled");
+            console.log("dead", key);
+            gameRef.child(key).remove();
             numberOfPlayersHook.numberOfPlayers--;
             if (numberOfPlayersHook.numberOfPlayers == 0) {
               dragonRef.child("start").set(false);
@@ -522,9 +529,7 @@ function numberOfPlayerFunction() {
 
     //runs when a new node is added to the tree in the DB
     allPlayersRef.on("child_added", async (snapshot) => {
-      console.log("num", numberOfPlayersHook.numberOfPlayers);
       const addedPlayer = await snapshot.val();
-      console.log("A_P = P_K", addedPlayer);
       const characterElement = document.createElement("div");
       characterElement.classList.add("Character", "grid-cell");
       if (addedPlayer.id == playerId) {
@@ -541,7 +546,6 @@ function numberOfPlayerFunction() {
         <div class="Character_you-arrow"></div>
       `;
       playerElements[addedPlayer.id] = characterElement;
-      console.log("EL[A_P] = P_EL", playerElements[addedPlayer.id]);
 
       characterElement.querySelector(".Character_name").innerText =
         addedPlayer.name;
@@ -571,13 +575,12 @@ function numberOfPlayerFunction() {
             if (selectionLock) {
               return;
             }
-            console.log(e.currentTarget.style.transform);
             Object.keys(players).forEach((key) => {
               let el = playerElements[key];
               if (e.currentTarget.style.transform == el.style.transform) {
                 const pos = setPosition(players[key].index + 1);
-                selectionArrow.style.left = 48 * pos.x - arrowXOffset + "px";
-                selectionArrow.style.top = 48 * pos.y + arrowYOffset + "px";
+                selectionArrow.style.left = 43 * pos.x - arrowXOffset + "px";
+                selectionArrow.style.top = 43 * pos.y + arrowYOffset + "px";
                 selectionHook.selectionIndex = players[key].index + 1;
               }
             });
@@ -588,27 +591,21 @@ function numberOfPlayerFunction() {
       //adds new player click if its doenst exist
       setInterval(function () {
         if (!playerClicks.includes(playerClick) && playerClick != null) {
-          console.log("playerclick", playerClick);
           playerClicks.push(playerClick);
         }
       }, 2000);
-      console.log("player click num", playerClicks.length);
-      console.log("added player", snapshot.key);
       numberOfPlayersHook.numberOfPlayers++;
     });
 
     //Remove character DOM element after they leave
     allPlayersRef.on("child_removed", async (snapshot) => {
       const removedKey = await snapshot.val().id;
-      console.log("snap", playerElements[removedKey]);
       var index = playerClicks.indexOf(playerElements[removedKey]);
       if (index > -1) {
         playerClicks.splice(index, 1);
       }
       gameContainer.removeChild(playerElements[removedKey]);
       delete playerElements[removedKey];
-      console.log("PC_L", playerClicks.length);
-      console.log("PC", playerClicks);
       numberOfPlayersHook.numberOfPlayers--;
       playersIndex.pop();
 
@@ -652,7 +649,6 @@ function numberOfPlayerFunction() {
 
           el.classList.remove("disabled");
 
-          console.log("=WAS", el);
           if (numberOfPlayersHook.numberOfPlayers == 4) {
             startBtn.disabled = false;
             dragonRef2.child("/hp").set(40);
@@ -692,6 +688,7 @@ function numberOfPlayerFunction() {
         parryBtn.style.opacity = 0.8;
         dragonSelection.hidden = false;
       } else {
+        //game ended
         activateRoleBtn.disabled = true;
         activateRoleBtn.style.opacity = 0.3;
         startBtn.disabled = false;
@@ -703,13 +700,17 @@ function numberOfPlayerFunction() {
         bosshealBtn.style.opacity = 0.3;
         parryBtn.disabled = true;
         parryBtn.style.opacity = 0.3;
+        attackBtn.hidden = true;
+        healBtn.hidden = true;
+        bosshealBtn.hidden = true;
+        activateRoleBtn.hidden = true;
         dragonSelection.hidden = true;
+        Object.keys(players).forEach((key) => {
+          allPlayersRef.child(key).child("role").set("???");
+        });
       }
     });
-
     startBtn.addEventListener("click", () => {
-      console.log("hello there", numberOfPlayersHook.numberOfPlayers);
-
       //Randomize roles to the players in the game
       let roleArr = [];
       for (let i = 0; i < numberOfPlayersHook.numberOfPlayers; i++) {
@@ -722,7 +723,6 @@ function numberOfPlayerFunction() {
         selectionRef.child("role").set(roleArr[roleIndex]);
         roleIndex++;
       });
-      console.log(roleArr);
       AutoSortPlayers();
       dragonRef.update({ start: true });
 
@@ -750,7 +750,6 @@ function numberOfPlayerFunction() {
           existingIndexes.sort();
           for (let i = 0; i < numberOfPlayersHook.numberOfPlayers; i++) {
             if (existingIndexes[i] != i) {
-              console.log(i, existingIndexes[i]);
               changeIndexes.push([i, existingIndexes[i]]);
             }
           }
@@ -824,7 +823,6 @@ function numberOfPlayerFunction() {
     });
     healBtn.addEventListener("click", () => {
       selectionLock = true;
-      console.log("heal", selectionIndex);
       //Heals player
       if (selectionIndex > 0) {
         Object.keys(players).forEach((key) => {
@@ -848,7 +846,6 @@ function numberOfPlayerFunction() {
       undoButton.hidden = false;
     });
     bosshealBtn.addEventListener("click", () => {
-      console.log("boss heal", selectionIndex);
       //console.log(playersIndex);
       //USE THIS AFTER ACTIONS HAS BEEN MADE
       confirmButton.hidden = false;
@@ -863,7 +860,6 @@ function numberOfPlayerFunction() {
       }
     });
     parryBtn.addEventListener("click", () => {
-      console.log("parry", selectionIndex);
       confirmButton.hidden = false;
       undoButton.hidden = false;
       if (realAction) {
@@ -876,7 +872,6 @@ function numberOfPlayerFunction() {
       }
     });
     activateRoleBtn.addEventListener("click", () => {
-      console.log("parry", selectionIndex);
       playerRef.child("revealed").set(true);
       playerRef.once("value", (snap) => {
         if (snap.child("role").val() == "paladin") {
@@ -901,17 +896,15 @@ function numberOfPlayerFunction() {
     });
 
     confirmButton.addEventListener("click", () => {
-      console.log("confirm", playersIndex);
       //Next player turn
       if (!realAction) {
         let newPlayerIndex;
-        console.log("my player index", myPlayerIndex);
 
-        //Player order turn logic
+        //Player order turn logic -> move this to dice throw section, split each player action
+        // into its own firebase set
         if (myPlayerIndex - 1 == playersIndex[playersIndex.length - 1]) {
-          console.log("last", playersIndex[playersIndex.length - 1]);
-          console.log("last p2", myPlayerIndex - 1);
           newPlayerIndex = playersIndex[playersIndex.length - 1];
+          //DO THIS AFTER ALL PLAYERS HAS ROLLED THE
           gameRef.once("value", (snap) => {
             gameRef.child("turn").set(snap.child("turn").val() + 1);
           });
@@ -934,7 +927,6 @@ function numberOfPlayerFunction() {
                   });
                   let diceThrow = parseInt(Math.random() * 6);
                   diceThrow += 1;
-                  console.log(diceThrow);
                   newHp += diceThrow;
 
                   allPlayersRef.child(target).child("hp").set(newHp);
@@ -958,7 +950,6 @@ function numberOfPlayerFunction() {
                 if (newHp != undefined) {
                   let diceThrow = parseInt(Math.random() * 6);
                   diceThrow += 1;
-                  console.log(diceThrow);
                   newHp -= diceThrow;
 
                   allPlayersRef.child(target).child("hp").set(newHp);
@@ -977,8 +968,6 @@ function numberOfPlayerFunction() {
                   }
                 }
               }
-              console.log("action", action);
-              console.log("target", target);
             });
           });
         } else {
@@ -990,6 +979,7 @@ function numberOfPlayerFunction() {
           }
           newPlayerIndex = playersIndex[currIndex + 1];
         }
+
         gameRef.child("playerTurn").set(newPlayerIndex);
         realAction = true;
         confirmButton.hidden = true;
@@ -1002,7 +992,6 @@ function numberOfPlayerFunction() {
     });
     undoButton.addEventListener("click", () => {
       selectionLock = false;
-      console.log("undo");
       realAction = true;
       gameRef.child(`${playerId}`).child("action").set({});
       gameRef.child(`${playerId}`).child("fakeaction").set({});
@@ -1012,6 +1001,16 @@ function numberOfPlayerFunction() {
       parryBtn.disabled = false;
       bosshealBtn.style.opacity = 0.8;
       parryBtn.style.opacity = 0.8;
+    });
+
+    musicBtn.addEventListener("click", () => {
+      if (!audio.paused) {
+        audio.pause();
+        musicEl.setAttribute("src", "/images/music_off.png");
+      } else {
+        audio.play();
+        musicEl.setAttribute("src", "/images/music_on.png");
+      }
     });
 
     //Stops the game when someone leaves
@@ -1084,8 +1083,8 @@ function numberOfPlayerFunction() {
                 pos = setPosition(creationIndex + 1);
                 selectionIndex = creationIndex + 1;
                 myPlayerIndex = selectionIndex;
-                selectionArrow.style.left = 48 * pos.x - arrowXOffset + "px";
-                selectionArrow.style.top = 48 * pos.y + arrowYOffset + "px";
+                selectionArrow.style.left = 43 * pos.x - arrowXOffset + "px";
+                selectionArrow.style.top = 43 * pos.y + arrowYOffset + "px";
               })
               .then(() => {
                 //db data
@@ -1097,7 +1096,7 @@ function numberOfPlayerFunction() {
                   x: pos.x,
                   y: pos.y,
                   index: creationIndex,
-                  role: "unassigned",
+                  role: "???",
                   revealed: false,
                 });
                 myName = "player " + (creationIndex + 1);
@@ -1122,7 +1121,6 @@ function numberOfPlayerFunction() {
       });
     } else {
       //logged out
-      console.log(numberOfPlayersHook.numberOfPlayers);
     }
   });
 

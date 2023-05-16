@@ -5,6 +5,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
     />
+    <link rel="icon" type="image/png" href="/images/attack.png" />
     <link rel="preconnect" href="https://fonts.gstatic.com" />
     <link
       href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;700&display=swap"
@@ -33,6 +34,17 @@
     </div>
 
     <div class="game-container">
+      <div
+        style="
+          color: white;
+          display: flex;
+          position: relative;
+          top: 25;
+          left: 400;
+        "
+      >
+        <div id="action_list"></div>
+      </div>
       <div class="game_btns">
         <button id="attack-btn" style="margin-top: auto" class="game_btn">
           Attack
@@ -74,7 +86,11 @@
       <label class="instruction-text" style="margin-left: 20"
         >Dundrian selection</label
       >
-      <audio id="background" style="margin-left: 100" controls autoplay loop>
+      <div class="instruction-arrow-container">
+        <img id="music-btn" class="music_btn" src="/images/music_off.png" />
+      </div>
+
+      <audio id="background" style="margin-left: 100" controls loop hidden>
         <source src="/sounds/background.mp3" type="audio/mpeg" />
       </audio>
     </div>
@@ -85,7 +101,7 @@
           margin-top: auto;
           margin-left: auto;
           margin-right: auto;
-          width: 290;
+          width: 170;
         "
         disabled
       >

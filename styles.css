@@ -24,7 +24,7 @@ body {
   /* width: 30vw;
   height: 12vw; */
   background: url(/images/cave.png) no-repeat no-repeat;
-  transform: scale(3);
+  transform: scale(2.7);
   image-rendering: auto;
 }
 .player-name-t {
@@ -105,9 +105,24 @@ button {
   border-bottom: 2px solid #1e830b;
   cursor: pointer;
 }
+.action_img {
+  width: 10;
+  height: 10;
+  filter: hue-rotate(30);
+}
+.listitem_title {
+  font-size: 7px;
+}
 button:active {
   position: relative;
   top: 1px;
+}
+.music_btn {
+  width: 80;
+  height: 80;
+  margin-top: -40;
+  margin-left: 50;
+  cursor: pointer;
 }
 .game_btns {
   display: flex;
