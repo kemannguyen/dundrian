@@ -689,6 +689,7 @@ const ListItem = (actor, img, target) => {
         dragonSelection.hidden = false;
       } else {
         //game ended
+        console.log("Game end btns");
         activateRoleBtn.disabled = true;
         activateRoleBtn.style.opacity = 0.3;
         startBtn.disabled = false;
@@ -708,6 +709,11 @@ const ListItem = (actor, img, target) => {
         Object.keys(players).forEach((key) => {
           allPlayersRef.child(key).child("role").set("???");
         });
+        try {
+          playerTurnText.querySelector(".turn-text").innerText =
+            "Game has ended";
+        } catch (e) {}
+        gameRef.remove();
       }
     });
     startBtn.addEventListener("click", () => {
