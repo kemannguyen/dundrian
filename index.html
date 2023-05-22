@@ -35,6 +35,44 @@
 
     <div class="game-container">
       <div
+        id="wait_text"
+        class="game-full-text"
+        style="z-index: 50; margin-top: 120px"
+      >
+        <span class="Character_name">Waiting for start..</span>
+      </div>
+      <div
+        id="dice-btn"
+        class="dice"
+        style="
+          position: absolute;
+          left: calc(50% - 28px);
+          top: calc(50% - 28px);
+          z-index: 50;
+          background-color: white;
+          width: 52px;
+          height: 52px;
+          font-size: 100px;
+        "
+        hidden
+      >
+        <div
+          id="dice-btn-outline"
+          class="dice"
+          style="
+            position: absolute;
+            left: calc(50% - 28px);
+            top: calc(50% - 28px);
+            z-index: 50;
+            width: 52px;
+            height: 52px;
+            font-size: 100px;
+            margin-left: -10px;
+          "
+        ></div>
+      </div>
+
+      <div
         style="
           color: white;
           display: flex;

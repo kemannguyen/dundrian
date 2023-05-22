@@ -160,6 +160,13 @@ button.game_btn {
   opacity: 0.8;
   margin-right: 5;
 }
+.dice_btn {
+  position: absolute;
+  top: calc(50% - 25px);
+  left: calc(50% - 25px);
+  width: 50px;
+  height: 50px;
+}
 .action_btns {
   position: absolute;
   top: 215;
@@ -485,7 +492,7 @@ button.game_btn {
 .Dragon_name-container {
   position: absolute;
   top: -40px;
-  left: -5px;
+  left: 0px;
   font-size: 10px;
   padding: 2px 5px 2px;
   border-radius: 10px;
@@ -515,4 +522,7 @@ button.game_btn {
 .disabled {
   pointer-events: none;
   background-color: red;
+}
+.dice {
+  line-height: 50px;
 }

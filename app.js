@@ -18,8 +18,14 @@ const bosshealBtn = document.getElementById("boss-heal-btn");
 const parryBtn = document.getElementById("parry-btn");
 const activateRoleBtn = document.getElementById("activate-role-btn");
 const musicBtn = document.getElementById("music-btn");
+const diceBtn = document.getElementById("dice-btn");
+const diceBtnOl = document.getElementById("dice-btn-outline");
+
 //firebase references
 let dragonRef2;
+
+//hud
+const waitText = document.getElementById("wait_text");
 
 const playerColors = [
   "blue",
@@ -139,10 +145,11 @@ const ListItem = (actor, img, target) => {
 
   const gameContainer = document.querySelector(".game-container");
   const playerNameInput = document.querySelector("#player-name");
-  let oldSelectIndex;
   var audio = document.getElementById("background");
   let musicEl = document.querySelector("#music-btn");
   let actionListHTML = document.querySelector("#action_list");
+
+  const diceBtnEl = document.querySelector("#dice-btn");
 
   function handleArrowPress(xChange = 0, yChange = 0) {
     if (selectionLock) {
@@ -327,46 +334,78 @@ const ListItem = (actor, img, target) => {
 
       //add thing to list
     });
-    gameRef.child("playerTurn").on("value", (s) => {
-      gameRef.on("value", (snap) => {
-        snap.forEach((child) => {
-          if (child.key != "playerTurn" && child.key != "turn") {
-            let string = JSON.stringify(child.child("fakeaction").val());
-            string = string.replace("{", "");
-            string = string.replace("}", "");
-            string = string.replaceAll('"', "");
-            let data = string.split(":");
-            let action = data[0];
-            let target = data[1];
-            console.log("child: fake action", action + " who?: " + target);
-            let actionItem;
-            try {
-              if (target != "dundrian") {
-                actionItem = `${players[child.key].name},${action},${
-                  players[target].name
-                }`;
-              } else {
-                actionItem = `${players[child.key].name},${action},${target}`;
-              }
-            } catch (e) {}
-            if (actionList.includes(actionItem)) {
-              console.log("already in");
-            } else if (target != undefined && action != undefined) {
-              console.log("ADDED ACTION");
-              actionList.push(actionItem);
-            }
-          }
-          console.log(actionList);
-        });
-      });
-      let listEl = "";
-      for (let i = 0; i < actionList.length; i++) {
-        let temp = actionList[i].split(",");
-        listEl += ListItem(temp[0], `/images/${temp[1]}.png`, temp[2]);
+
+    let currentPercent;
+
+    var showPercent = window.setInterval(function () {
+      if (currentPercent < 6) {
+        currentPercent += 1;
+      } else {
+        currentPercent = 1;
       }
-      actionListHTML.innerHTML = listEl;
-      console.log("listel:", listEl);
+      result = "";
+      if (currentPercent == 1) {
+        result = "⚀";
+      } else if (currentPercent == 2) {
+        result = "⚁";
+      } else if (currentPercent == 3) {
+        result = "⚂";
+      } else if (currentPercent == 4) {
+        result = "⚃";
+      } else if (currentPercent == 5) {
+        result = "⚄";
+      } else if (currentPercent == 6) {
+        result = "⚅";
+      }
+      diceBtnOl.innerText = `${result}`;
+    }, 20);
+
+    gameRef.on("value", (snap) => {
+      snap.forEach((child) => {
+        if (child.key != "playerTurn" && child.key != "turn") {
+          let string = JSON.stringify(child.child("fakeaction").val());
+          string = string.replace("{", "");
+          string = string.replace("}", "");
+          string = string.replaceAll('"', "");
+          let data = string.split(":");
+          let action = data[0];
+          let target = data[1];
+          //console.log("child: fake action", action + " who?: " + target);
+          var actionItem;
+          try {
+            if (target != "dundrian") {
+              actionItem = `${players[child.key].name},${action},${
+                players[target].name
+              }`;
+            } else {
+              actionItem = `${players[child.key].name},${action},${target}`;
+            }
+          } catch (e) {}
+          if (actionList.includes(actionItem)) {
+            console.log("already in", actionList);
+          } else if (target != undefined && action != undefined) {
+            console.log("ADDED ACTION");
+            actionList.push(actionItem);
+          } else {
+            console.log("debug", target);
+            console.log("debug", action);
+          }
+        }
+        //console.log(actionList);
+      });
+      if (actionList != undefined) {
+        console.log("AL LENG", actionList.length);
+        console.log("??????", actionList);
+        let listEl = "";
+        for (let i = 0; i < actionList.length; i++) {
+          console.log("ALI add", i);
+          let temp = actionList[i].split(",");
+          listEl += ListItem(temp[0], `/images/${temp[1]}.png`, temp[2]);
+        }
+        actionListHTML.innerHTML = listEl;
+      }
     });
+
     undoButton = document.getElementById("undo-btn");
     confirmButton = document.getElementById("confirm-btn");
 
@@ -374,6 +413,7 @@ const ListItem = (actor, img, target) => {
     //RUN after all players has done their actions
     var endTurnRef = firebase.database().ref("game/turn");
     endTurnRef.on("value", async (snap) => {
+      //console.log("Test", snap.val());
       if ((await snap.val()) != null && (await snap.val()) != 0) {
         let lastPlayer = playersIndex.pop();
         playersIndex.reverse();
@@ -384,7 +424,20 @@ const ListItem = (actor, img, target) => {
         } else {
           dragonRef.child("direction").set("left");
         }
-        //remove and add fake action display
+        Object.keys(players).forEach((key) => {
+          try {
+            gameRef.child(key).remove();
+          } catch (e) {}
+        });
+        //when you are alone and want action list things
+        // let listEl = "";
+        // for (let i = 0; i < actionList.length; i++) {
+        //   console.log("ALI add", i);
+        //   let temp = actionList[i].split(",");
+        //   listEl += ListItem(temp[0], `/images/${temp[1]}.png`, temp[2]);
+        // }
+        // actionListHTML.innerHTML = listEl;
+        console.log("AL when show: ", actionList);
       }
       bosshealBtn.disabled = false;
       bosshealBtn.style.opacity = 0.8;
@@ -395,7 +448,10 @@ const ListItem = (actor, img, target) => {
       dragonSelection.style.top = 43 * pos.y - 350 + "px";
       dragonSelection.style.left = 43 * pos.x - 490 + "px";
       actionList.length = 0;
+      actionList = [];
       actionListHTML.innerHTML = "";
+      console.log("AL cleared", actionList);
+      console.log("AL TEST", actionList.length);
     });
 
     const dragonElement = document.createElement("div");
@@ -455,7 +511,7 @@ const ListItem = (actor, img, target) => {
       players = (await snapshot.val()) || {};
       dragonRef.child("start").on("value", async (snap) => {
         if ((await snap.val()) == false) {
-          console.log("ONLY ONCEEE start in allref", snap.val());
+          //console.log("ONLY ONCEEE start in allref", snap.val());
           numberOfPlayersHook.numberOfPlayers = snapshot.numChildren();
         }
       });
@@ -476,14 +532,14 @@ const ListItem = (actor, img, target) => {
 
           el.style.transform = `translate3d(${left}, ${top}, 0)`;
           if (players[key].hp <= 0) {
-            let fpi = playersIndex.filter((e) => e !== players[key].index);
-            //playersIndex = filteredplayerIndex;
-            playersIndex.length = 0;
-            playersIndex = [...fpi];
             el.classList.add("disabled");
-            console.log("dead", key);
+            console.log("dead", el);
             gameRef.child(key).remove();
-            numberOfPlayersHook.numberOfPlayers--;
+            let modifiedPlayersIndex = playersIndex.filter(
+              (e) => e !== players[key].index
+            );
+            playersIndex.length = 0;
+            playersIndex = [...modifiedPlayersIndex];
             if (numberOfPlayersHook.numberOfPlayers == 0) {
               dragonRef.child("start").set(false);
             }
@@ -491,22 +547,43 @@ const ListItem = (actor, img, target) => {
         } catch (e) {}
 
         //activates buttons when its your turn
-        gameRef.on("value", async (snapshot) => {
-          if ((await snapshot.child("playerTurn").val()) != myPlayerIndex - 1) {
+        gameRef.on("value", (snapshot) => {
+          console.log(snapshot.child("playerTurn").val());
+          if (snapshot.child("playerTurn").val() != myPlayerIndex - 1) {
             yourTurn = false;
             attackBtn.hidden = true;
             healBtn.hidden = true;
             bosshealBtn.hidden = true;
             parryBtn.hidden = true;
             activateRoleBtn.hidden = true;
+            diceBtn.hidden = true;
+            diceBtnOl.hidden = true;
           } else {
-            yourTurn = true;
-            attackBtn.hidden = false;
-            healBtn.hidden = false;
-            bosshealBtn.hidden = false;
-            parryBtn.hidden = false;
-            activateRoleBtn.hidden = false;
-            selectionFunction();
+            gameRef.child("phase").on("value", (snapshot) => {
+              yourTurn = true;
+              let result = snapshot.val();
+              if (result == "action") {
+                diceBtn.hidden = true;
+                diceBtnOl.hidden = true;
+                attackBtn.hidden = false;
+                healBtn.hidden = false;
+                bosshealBtn.hidden = false;
+                parryBtn.hidden = false;
+                activateRoleBtn.hidden = false;
+                selectionFunction();
+              } else {
+                if (yourTurn) {
+                  currentPercent = 0;
+                  diceBtn.hidden = false;
+                  diceBtnOl.hidden = false;
+                  attackBtn.hidden = true;
+                  healBtn.hidden = true;
+                  bosshealBtn.hidden = true;
+                  parryBtn.hidden = true;
+                  activateRoleBtn.hidden = true;
+                }
+              }
+            });
           }
         });
         //Change character if role activated
@@ -565,7 +642,6 @@ const ListItem = (actor, img, target) => {
 
       //player click function
       let playerClick;
-
       playerClick = document.querySelector(`#${addedPlayer.id}`);
 
       //selects the player and moves the arrow to the pressed one
@@ -634,17 +710,17 @@ const ListItem = (actor, img, target) => {
     dragonRef.child("start").on("value", async (snapshot) => {
       if (await snapshot.val()) {
         playersIndex.sort();
-        console.log("START");
+        //console.log("START");
         let players2 = {};
         const allPlayersRef2 = firebase.database().ref("players");
         allPlayersRef2.on("value", (snapshot) => {
           players2 = snapshot.val();
         });
 
-        console.log("before super");
+        //console.log("before super");
         //updates player hp
         Object.keys(players2).forEach((key) => {
-          console.log("SUPER");
+          //console.log("SUPER");
           let el = document.querySelector(`#${key}`);
 
           el.classList.remove("disabled");
@@ -687,9 +763,9 @@ const ListItem = (actor, img, target) => {
         parryBtn.disabled = false;
         parryBtn.style.opacity = 0.8;
         dragonSelection.hidden = false;
+        waitText.hidden = true;
       } else {
         //game ended
-        console.log("Game end btns");
         activateRoleBtn.disabled = true;
         activateRoleBtn.style.opacity = 0.3;
         startBtn.disabled = false;
@@ -709,10 +785,7 @@ const ListItem = (actor, img, target) => {
         Object.keys(players).forEach((key) => {
           allPlayersRef.child(key).child("role").set("???");
         });
-        try {
-          playerTurnText.querySelector(".turn-text").innerText =
-            "Game has ended";
-        } catch (e) {}
+        waitText.hidden = false;
         gameRef.remove();
       }
     });
@@ -735,6 +808,7 @@ const ListItem = (actor, img, target) => {
       var game = {
         turn: 0,
         playerTurn: "",
+        phase: "action",
       };
       gameRef.set(game);
     });
@@ -780,9 +854,12 @@ const ListItem = (actor, img, target) => {
     }
 
     //GAME BUTTONS
+    var confirmVal = "";
+    var confirmAction = "";
+    var confirmChild = "";
+
     attackBtn.addEventListener("click", () => {
       selectionLock = true;
-      console.log("atack", selectionIndex);
       //attack player
       if (selectionIndex > 0) {
         Object.keys(players).forEach((key) => {
@@ -796,16 +873,22 @@ const ListItem = (actor, img, target) => {
             //   return;
             // }
             if (realAction) {
-              gameRef.child(`${playerId}`).child("action").set({ attack: key });
+              //gameRef.child(`${playerId}`).child("action").set({ attack: key });
+              confirmChild = "action";
+              confirmAction = "attack";
+              confirmVal = key;
               bosshealBtn.disabled = true;
               parryBtn.disabled = true;
               bosshealBtn.style.opacity = 0.3;
               parryBtn.style.opacity = 0.3;
             } else {
-              gameRef
-                .child(`${playerId}`)
-                .child("fakeaction")
-                .set({ attack: key });
+              // gameRef
+              //   .child(`${playerId}`)
+              //   .child("fakeaction")
+              //   .set({ attack: key });
+              confirmChild = "fakeaction";
+              confirmAction = "attack";
+              confirmVal = key;
             }
           }
         });
@@ -813,15 +896,21 @@ const ListItem = (actor, img, target) => {
       //attack dragon
       else {
         if (realAction) {
-          gameRef
-            .child(`${playerId}`)
-            .child("action")
-            .set({ attack: "dundrian" });
+          // gameRef
+          //   .child(`${playerId}`)
+          //   .child("action")
+          //   .set({ attack: "dundrian" });
+          confirmChild = "action";
+          confirmAction = "attack";
+          confirmVal = "dundrian";
         } else {
-          gameRef
-            .child(`${playerId}`)
-            .child("fakeaction")
-            .set({ attack: "dundrian" });
+          // gameRef
+          //   .child(`${playerId}`)
+          //   .child("fakeaction")
+          //   .set({ attack: "dundrian" });
+          confirmChild = "fakeaction";
+          confirmAction = "attack";
+          confirmVal = "dundrian";
         }
       }
       confirmButton.hidden = false;
@@ -834,16 +923,17 @@ const ListItem = (actor, img, target) => {
         Object.keys(players).forEach((key) => {
           if (players[key].index + 1 == selectionIndex) {
             if (realAction) {
-              gameRef.child(`${playerId}`).child("action").set({ heal: key });
+              confirmChild = "action";
+              confirmAction = "heal";
+              confirmVal = key;
               bosshealBtn.disabled = true;
               parryBtn.disabled = true;
               bosshealBtn.style.opacity = 0.3;
               parryBtn.style.opacity = 0.3;
             } else {
-              gameRef
-                .child(`${playerId}`)
-                .child("fakeaction")
-                .set({ heal: key });
+              confirmChild = "fakeaction";
+              confirmAction = "heal";
+              confirmVal = key;
             }
           }
         });
@@ -857,24 +947,26 @@ const ListItem = (actor, img, target) => {
       confirmButton.hidden = false;
       undoButton.hidden = false;
       if (realAction) {
-        gameRef.child(`${playerId}`).child("action").set({ heal: "dundrian" });
+        confirmChild = "action";
+        confirmAction = "heal";
+        confirmVal = "dundrian";
       } else {
-        gameRef
-          .child(`${playerId}`)
-          .child("fakeaction")
-          .set({ heal: "dundrian" });
+        confirmChild = "fakeaction";
+        confirmAction = "heal";
+        confirmVal = "dundrian";
       }
     });
     parryBtn.addEventListener("click", () => {
       confirmButton.hidden = false;
       undoButton.hidden = false;
       if (realAction) {
-        gameRef.child(`${playerId}`).child("action").set({ parry: playerId });
+        confirmChild = "action";
+        confirmAction = "parry";
+        confirmVal = playerId;
       } else {
-        gameRef
-          .child(`${playerId}`)
-          .child("fakeaction")
-          .set({ parry: playerId });
+        confirmChild = "fakeaction";
+        confirmAction = "parry";
+        confirmVal = playerId;
       }
     });
     activateRoleBtn.addEventListener("click", () => {
@@ -902,6 +994,11 @@ const ListItem = (actor, img, target) => {
     });
 
     confirmButton.addEventListener("click", () => {
+      gameRef
+        .child(`${playerId}`)
+        .child(confirmChild)
+        .child(confirmAction)
+        .set(confirmVal);
       //Next player turn
       if (!realAction) {
         let newPlayerIndex;
@@ -909,73 +1006,11 @@ const ListItem = (actor, img, target) => {
         //Player order turn logic -> move this to dice throw section, split each player action
         // into its own firebase set
         if (myPlayerIndex - 1 == playersIndex[playersIndex.length - 1]) {
-          newPlayerIndex = playersIndex[playersIndex.length - 1];
-          //DO THIS AFTER ALL PLAYERS HAS ROLLED THE
-          gameRef.once("value", (snap) => {
-            gameRef.child("turn").set(snap.child("turn").val() + 1);
-          });
-          Object.keys(players).forEach((key) => {
-            var actionRef = firebase.database().ref(`game/${key}/action`);
-            actionRef.once("value", async (snap) => {
-              let string = JSON.stringify(await snap.val());
-              string = string.replace("{", "");
-              string = string.replace("}", "");
-              string = string.replaceAll('"', "");
-              let data = string.split(":");
-              let action = data[0];
-              let target = data[1];
-
-              if (action == "heal") {
-                let newHp;
-                if (target != "dundrian") {
-                  allPlayersRef.child(target).once("value", (snap) => {
-                    newHp = snap.child("hp").val();
-                  });
-                  let diceThrow = parseInt(Math.random() * 6);
-                  diceThrow += 1;
-                  newHp += diceThrow;
-
-                  allPlayersRef.child(target).child("hp").set(newHp);
-                } else {
-                  dragonRef.on("value", (snap) => {
-                    newHp = snap.child("hp").val();
-                  });
-                  let diceThrow = parseInt(Math.random() * 6);
-                  diceThrow += 1;
-                  newHp += diceThrow;
-
-                  dragonRef.child("hp").set(newHp);
-                }
-              }
-              if (action == "attack") {
-                //player attack logic
-                let newHp;
-                allPlayersRef.child(target).once("value", (snap) => {
-                  newHp = snap.child("hp").val();
-                });
-                if (newHp != undefined) {
-                  let diceThrow = parseInt(Math.random() * 6);
-                  diceThrow += 1;
-                  newHp -= diceThrow;
-
-                  allPlayersRef.child(target).child("hp").set(newHp);
-                } else {
-                  //dragon attack logic
-                  dragonRef.on("value", (snap) => {
-                    newHp = snap.child("hp").val();
-                  });
-                  let diceThrow = parseInt(Math.random() * 6);
-                  diceThrow += 1;
-                  newHp -= diceThrow;
-
-                  dragonRef.child("hp").set(newHp);
-                  if (newHp <= 0) {
-                    dragonRef.child("start").set(false);
-                  }
-                }
-              }
-            });
-          });
+          //lead to first dice throw from here
+          //...
+          gameRef.child("phase").set("dice");
+          //new player after full round end
+          newPlayerIndex = playersIndex[0];
         } else {
           //needs fixing
           //find next player turn
@@ -1019,6 +1054,111 @@ const ListItem = (actor, img, target) => {
       }
     });
 
+    diceBtn.addEventListener("click", async () => {
+      await dicePhase();
+      //if you are the last player in the phase
+      if (myPlayerIndex - 1 == playersIndex[playersIndex.length - 1]) {
+        //new player after full round end
+        newPlayerIndex = playersIndex[playersIndex.length - 1];
+
+        gameRef.child("playerTurn").set(newPlayerIndex);
+
+        //DO THIS AFTER ALL PLAYERS HAS ROLLED THE
+        gameRef.once("value", (snap) => {
+          gameRef.child("turn").set(snap.child("turn").val() + 1);
+        });
+        gameRef.child("phase").set("action");
+      } else {
+        //needs fixing
+        //find next player turn
+        console.log("find next player....");
+        let currIndex = playersIndex.findIndex(getIndexOf);
+        function getIndexOf(value) {
+          return value == myPlayerIndex - 1;
+        }
+        newPlayerIndex = playersIndex[currIndex + 1];
+        gameRef.child("playerTurn").set(newPlayerIndex);
+      }
+    });
+    function sleep(milliseconds) {
+      const date = Date.now();
+      let currentDate = null;
+      do {
+        currentDate = Date.now();
+      } while (currentDate - date < milliseconds);
+    }
+    async function dicePhase() {
+      //reads users action data from db and implements it
+      var actionRef = firebase.database().ref(`game/${playerId}/action`);
+
+      diceThrow = currentPercent;
+      console.log("DICE", diceThrow);
+
+      sleep(1000);
+      actionRef.once("value", async (snap) => {
+        let string = JSON.stringify(await snap.val());
+        string = string.replace("{", "");
+        string = string.replace("}", "");
+        string = string.replaceAll('"', "");
+        let data = string.split(":");
+        let action = data[0];
+        let target = data[1];
+        console.log("AAA", action);
+        console.log("BBB", target);
+        if (action == null && BBB == undefined) {
+          return;
+        }
+
+        let newHp;
+        if (target != "dundrian") {
+          allPlayersRef.child(target).once("value", (snap) => {
+            newHp = snap.child("hp").val();
+          });
+        } else {
+          dragonRef.on("value", (snap) => {
+            newHp = snap.child("hp").val();
+          });
+        }
+
+        if (action == "heal") {
+          if (target != "dundrian") {
+            newHp += diceThrow;
+
+            allPlayersRef.child(target).child("hp").set(newHp);
+          } else {
+            newHp += diceThrow;
+
+            dragonRef.child("hp").set(newHp);
+          }
+        }
+        if (action == "attack") {
+          if (target != "dundrian") {
+            newHp -= diceThrow;
+
+            allPlayersRef.child(target).child("hp").set(newHp);
+            //implement if kill remove from num
+            if (newHp <= 0) {
+              numberOfPlayersHook.numberOfPlayers--;
+              //remove from index here
+              let modifiedPlayersIndex = playersIndex.filter(
+                (e) => e !== players[target].index
+              );
+              playersIndex.length = 0;
+              playersIndex = [...modifiedPlayersIndex];
+            }
+          } else {
+            //dragon attack logic
+            newHp -= diceThrow;
+
+            dragonRef.child("hp").set(newHp);
+            if (newHp <= 0) {
+              dragonRef.child("start").set(false);
+            }
+          }
+        }
+        //if action parry add logic later
+      });
+    }
     //Stops the game when someone leaves
     window.onbeforeunload = function () {
       dragonRef2.child("/start").set(false);
