@@ -527,20 +527,27 @@ const ListItem = (actor, img, target) => {
       });
     });
 
+    //Text HELPER
     gameRef.child("playerTurn").on("value", (snap) => {
-      gameRef.child("phase").once("value", (snapshot) => {
+      gameRef.child("phase").on("value", (snapshot) => {
         if (snapshot.val() == "action" && snap.val() != myPlayerIndex - 1) {
           textHelper.innerText = "";
           console.log("RETURNED PT");
-          return;
         } else if (
+          snap.val() == myPlayerIndex - 1 &&
+          snapshot.val() == "action"
+        ) {
+          textHelper.innerText = "select real action";
+        } else if (
+          //when its nit your turn during dice phase
           snap.val() != myPlayerIndex - 1 &&
           snapshot.val() != "action"
         ) {
+          //before game starts
           if (snap.val() == undefined) {
             textHelper.innerText = "";
           } else {
-            //player ??? is "action" + target
+            //shows other player action
             Object.keys(players).forEach((key) => {
               if (players[key].index == snap.val()) {
                 var actionRef = firebase.database().ref(`game/${key}/action`);
@@ -562,12 +569,14 @@ const ListItem = (actor, img, target) => {
                     textHelper.innerText =
                       players[key].name + " " + action + "s " + target;
                   } else {
-                    textHelper.innerText =
-                      players[key].name +
-                      " " +
-                      action +
-                      "s " +
-                      players[target].name;
+                    try {
+                      textHelper.innerText =
+                        players[key].name +
+                        " " +
+                        action +
+                        "s " +
+                        players[target].name;
+                    } catch (e) {}
                   }
                 });
               }
@@ -577,8 +586,6 @@ const ListItem = (actor, img, target) => {
           textHelper.innerText = "Press on dice to roll";
         }
       });
-
-      console.log("PT NO RETURN");
     });
 
     //runs when a change occurs in the DB
@@ -646,7 +653,6 @@ const ListItem = (actor, img, target) => {
                 parryBtn.hidden = false;
                 activateRoleBtn.hidden = false;
                 selectionFunction();
-                textHelper.innerText = "select real action";
               } else {
                 if (yourTurn) {
                   diceHook.diceStop = false;
@@ -1152,6 +1158,27 @@ const ListItem = (actor, img, target) => {
           return;
         }
 
+        let targetParry;
+        //for parry
+        var targetActionRef = firebase.database().ref(`game/${target}/action`);
+        targetActionRef.on("value", (snap2) => {
+          let string = JSON.stringify(snap2.val());
+          if (snap2.val() == null) {
+            return;
+          }
+          string = string.replace("{", "");
+          string = string.replace("}", "");
+          string = string.replaceAll('"', "");
+          let data2 = string.split(":");
+          let targetAction = data2[0];
+
+          if (targetAction == "parry") {
+            targetParry = true;
+          } else {
+            targetParry = false;
+          }
+        });
+
         let newHp;
         if (target != "dundrian") {
           allPlayersRef.child(target).once("value", (snap) => {
@@ -1165,8 +1192,26 @@ const ListItem = (actor, img, target) => {
 
         if (action == "heal") {
           if (target != "dundrian") {
-            newHp += diceThrow;
+            if (!targetParry) {
+              newHp += diceThrow;
+            } else {
+              newHp -= Math.ceil(diceThrow / 2);
+              players[playerId].hp += Math.ceil(diceThrow / 2);
 
+              allPlayersRef
+                .child(playerId)
+                .child("hp")
+                .set(players[playerId].hp);
+            }
+            if (newHp <= 0) {
+              numberOfPlayersHook.numberOfPlayers--;
+              //remove from index here
+              let modifiedPlayersIndex = playersIndex.filter(
+                (e) => e !== players[target].index
+              );
+              playersIndex.length = 0;
+              playersIndex = [...modifiedPlayersIndex];
+            }
             allPlayersRef.child(target).child("hp").set(newHp);
           } else {
             newHp += diceThrow;
@@ -1176,7 +1221,15 @@ const ListItem = (actor, img, target) => {
         }
         if (action == "attack") {
           if (target != "dundrian") {
-            newHp -= diceThrow;
+            if (!targetParry) {
+              newHp -= diceThrow;
+            } else {
+              players[playerId].hp -= Math.ceil(diceThrow / 2);
+              allPlayersRef
+                .child(playerId)
+                .child("hp")
+                .set(players[playerId].hp);
+            }
 
             allPlayersRef.child(target).child("hp").set(newHp);
             //implement if kill remove from num
