@@ -4,6 +4,8 @@ const MAX_PLAYERS = 8;
 const MIN_PLAYERS = 4;
 const arrowXOffset = 490;
 const arrowYOffset = -440;
+
+let diceStop;
 let numberOfPlayers = 0;
 let selectionIndex = 0;
 let myPlayerIndex;
@@ -64,6 +66,20 @@ function setRole(i) {
     "cultist",
   ];
   return roles[i];
+}
+
+let diceHook = {};
+Object.defineProperty(diceHook, "diceStop", {
+  get: function () {
+    return diceStop;
+  },
+  set: function (newValue) {
+    diceStop = newValue; // Run the function every time valueA changes
+    diceFunc();
+  },
+});
+function diceFunc() {
+  console.log("TEST", diceHook.diceStop);
 }
 // Tracks when selection index change
 let selectionHook = {};
@@ -145,12 +161,12 @@ const ListItem = (actor, img, target) => {
 
   const gameContainer = document.querySelector(".game-container");
   const playerNameInput = document.querySelector("#player-name");
+  const textHelper = document.getElementById("text_helper");
   var audio = document.getElementById("background");
   let musicEl = document.querySelector("#music-btn");
   let actionListHTML = document.querySelector("#action_list");
 
   const diceBtnEl = document.querySelector("#dice-btn");
-
   function handleArrowPress(xChange = 0, yChange = 0) {
     if (selectionLock) {
       return;
@@ -337,28 +353,33 @@ const ListItem = (actor, img, target) => {
 
     let currentPercent;
 
-    var showPercent = window.setInterval(function () {
-      if (currentPercent < 6) {
-        currentPercent += 1;
-      } else {
-        currentPercent = 1;
-      }
-      result = "";
-      if (currentPercent == 1) {
-        result = "⚀";
-      } else if (currentPercent == 2) {
-        result = "⚁";
-      } else if (currentPercent == 3) {
-        result = "⚂";
-      } else if (currentPercent == 4) {
-        result = "⚃";
-      } else if (currentPercent == 5) {
-        result = "⚄";
-      } else if (currentPercent == 6) {
-        result = "⚅";
-      }
-      diceBtnOl.innerText = `${result}`;
-    }, 20);
+    async function diceThrowFunc() {
+      currentPercent = Math.floor(Math.random() * 6) + 1;
+      diceBtnOl.src = `/images/${currentPercent}.png`;
+    }
+
+    // var showPercent = window.setInterval(function () {
+    //   if (currentPercent < 6) {
+    //     currentPercent += 1;
+    //   } else {
+    //     currentPercent = 1;
+    //   }
+    //   var result = "";
+    //   if (currentPercent == 1) {
+    //     result = "⚀";
+    //   } else if (currentPercent == 2) {
+    //     result = "⚁";
+    //   } else if (currentPercent == 3) {
+    //     result = "⚂";
+    //   } else if (currentPercent == 4) {
+    //     result = "⚃";
+    //   } else if (currentPercent == 5) {
+    //     result = "⚄";
+    //   } else if (currentPercent == 6) {
+    //     result = "⚅";
+    //   }
+    //   diceBtnOl.innerText = `${result}`;
+    // }, 30);
 
     gameRef.on("value", (snap) => {
       snap.forEach((child) => {
@@ -506,6 +527,60 @@ const ListItem = (actor, img, target) => {
       });
     });
 
+    gameRef.child("playerTurn").on("value", (snap) => {
+      gameRef.child("phase").once("value", (snapshot) => {
+        if (snapshot.val() == "action" && snap.val() != myPlayerIndex - 1) {
+          textHelper.innerText = "";
+          console.log("RETURNED PT");
+          return;
+        } else if (
+          snap.val() != myPlayerIndex - 1 &&
+          snapshot.val() != "action"
+        ) {
+          if (snap.val() == undefined) {
+            textHelper.innerText = "";
+          } else {
+            //player ??? is "action" + target
+            Object.keys(players).forEach((key) => {
+              if (players[key].index == snap.val()) {
+                var actionRef = firebase.database().ref(`game/${key}/action`);
+
+                actionRef.once("value", (snap) => {
+                  let string = JSON.stringify(snap.val());
+                  string = string.replace("{", "");
+                  string = string.replace("}", "");
+                  string = string.replaceAll('"', "");
+                  let data = string.split(":");
+                  let action = data[0];
+                  let target = data[1];
+                  console.log("AAA", action);
+                  console.log("BBB", target);
+                  if (action == null && BBB == undefined) {
+                    return;
+                  }
+                  if (target == "dundrian") {
+                    textHelper.innerText =
+                      players[key].name + " " + action + "s " + target;
+                  } else {
+                    textHelper.innerText =
+                      players[key].name +
+                      " " +
+                      action +
+                      "s " +
+                      players[target].name;
+                  }
+                });
+              }
+            });
+          }
+        } else {
+          textHelper.innerText = "Press on dice to roll";
+        }
+      });
+
+      console.log("PT NO RETURN");
+    });
+
     //runs when a change occurs in the DB
     allPlayersRef.on("value", async (snapshot) => {
       players = (await snapshot.val()) || {};
@@ -571,8 +646,10 @@ const ListItem = (actor, img, target) => {
                 parryBtn.hidden = false;
                 activateRoleBtn.hidden = false;
                 selectionFunction();
+                textHelper.innerText = "select real action";
               } else {
                 if (yourTurn) {
+                  diceHook.diceStop = false;
                   currentPercent = 0;
                   diceBtn.hidden = false;
                   diceBtnOl.hidden = false;
@@ -864,16 +941,7 @@ const ListItem = (actor, img, target) => {
       if (selectionIndex > 0) {
         Object.keys(players).forEach((key) => {
           if (players[key].index + 1 == selectionIndex) {
-            // if (playerId == key) {
-            //   notificationContent.innerHTML = "can't attack yourself";
-            //   notification.className = "notification-show";
-            //   setTimeout(function () {
-            //     notification.className = "notification-hide";
-            //   }, 2000);
-            //   return;
-            // }
             if (realAction) {
-              //gameRef.child(`${playerId}`).child("action").set({ attack: key });
               confirmChild = "action";
               confirmAction = "attack";
               confirmVal = key;
@@ -882,10 +950,6 @@ const ListItem = (actor, img, target) => {
               bosshealBtn.style.opacity = 0.3;
               parryBtn.style.opacity = 0.3;
             } else {
-              // gameRef
-              //   .child(`${playerId}`)
-              //   .child("fakeaction")
-              //   .set({ attack: key });
               confirmChild = "fakeaction";
               confirmAction = "attack";
               confirmVal = key;
@@ -896,18 +960,10 @@ const ListItem = (actor, img, target) => {
       //attack dragon
       else {
         if (realAction) {
-          // gameRef
-          //   .child(`${playerId}`)
-          //   .child("action")
-          //   .set({ attack: "dundrian" });
           confirmChild = "action";
           confirmAction = "attack";
           confirmVal = "dundrian";
         } else {
-          // gameRef
-          //   .child(`${playerId}`)
-          //   .child("fakeaction")
-          //   .set({ attack: "dundrian" });
           confirmChild = "fakeaction";
           confirmAction = "attack";
           confirmVal = "dundrian";
@@ -1026,6 +1082,7 @@ const ListItem = (actor, img, target) => {
         confirmButton.hidden = true;
         undoButton.hidden = true;
       } else {
+        textHelper.innerText = "declare fake action";
         realAction = false;
         confirmButton.hidden = true;
         undoButton.hidden = true;
@@ -1053,50 +1110,36 @@ const ListItem = (actor, img, target) => {
         musicEl.setAttribute("src", "/images/music_on.png");
       }
     });
-
-    diceBtn.addEventListener("click", async () => {
-      await dicePhase();
-      //if you are the last player in the phase
-      if (myPlayerIndex - 1 == playersIndex[playersIndex.length - 1]) {
-        //new player after full round end
-        newPlayerIndex = playersIndex[playersIndex.length - 1];
-
-        gameRef.child("playerTurn").set(newPlayerIndex);
-
-        //DO THIS AFTER ALL PLAYERS HAS ROLLED THE
-        gameRef.once("value", (snap) => {
-          gameRef.child("turn").set(snap.child("turn").val() + 1);
-        });
-        gameRef.child("phase").set("action");
-      } else {
-        //needs fixing
-        //find next player turn
-        console.log("find next player....");
-        let currIndex = playersIndex.findIndex(getIndexOf);
-        function getIndexOf(value) {
-          return value == myPlayerIndex - 1;
-        }
-        newPlayerIndex = playersIndex[currIndex + 1];
-        gameRef.child("playerTurn").set(newPlayerIndex);
-      }
+    diceBtn.addEventListener("click", () => {
+      diceHook.diceStop = true;
+      diceThrowFunc();
+      setTimeout(function () {
+        dicePhase();
+      }, 3000);
     });
-    function sleep(milliseconds) {
+    window.setInterval(function () {
+      if (diceHook.diceStop == false && yourTurn) {
+        diceThrowFunc();
+        console.log("1");
+      }
+    }, 50);
+
+    async function sleep(milliseconds) {
       const date = Date.now();
       let currentDate = null;
       do {
         currentDate = Date.now();
       } while (currentDate - date < milliseconds);
     }
-    async function dicePhase() {
-      //reads users action data from db and implements it
-      var actionRef = firebase.database().ref(`game/${playerId}/action`);
-
+    function dicePhase() {
       diceThrow = currentPercent;
       console.log("DICE", diceThrow);
 
-      sleep(1000);
-      actionRef.once("value", async (snap) => {
-        let string = JSON.stringify(await snap.val());
+      //reads users action data from db and implements it
+      var actionRef = firebase.database().ref(`game/${playerId}/action`);
+
+      actionRef.once("value", (snap) => {
+        let string = JSON.stringify(snap.val());
         string = string.replace("{", "");
         string = string.replace("}", "");
         string = string.replaceAll('"', "");
@@ -1158,6 +1201,28 @@ const ListItem = (actor, img, target) => {
         }
         //if action parry add logic later
       });
+      if (myPlayerIndex - 1 == playersIndex[playersIndex.length - 1]) {
+        //new player after full round end
+        newPlayerIndex = playersIndex[playersIndex.length - 1];
+
+        gameRef.child("playerTurn").set(newPlayerIndex);
+
+        //DO THIS AFTER ALL PLAYERS HAS ROLLED THE
+        gameRef.once("value", (snap) => {
+          gameRef.child("turn").set(snap.child("turn").val() + 1);
+        });
+        gameRef.child("phase").set("action");
+      } else {
+        //needs fixing
+        //find next player turn
+        console.log("find next player....");
+        let currIndex = playersIndex.findIndex(getIndexOf);
+        function getIndexOf(value) {
+          return value == myPlayerIndex - 1;
+        }
+        newPlayerIndex = playersIndex[currIndex + 1];
+        gameRef.child("playerTurn").set(newPlayerIndex);
+      }
     }
     //Stops the game when someone leaves
     window.onbeforeunload = function () {
@@ -1267,6 +1332,7 @@ const ListItem = (actor, img, target) => {
       });
     } else {
       //logged out
+      console.log("LOGGED OUT");
     }
   });
 

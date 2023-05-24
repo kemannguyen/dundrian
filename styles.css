@@ -524,5 +524,12 @@ button.game_btn {
   background-color: red;
 }
 .dice {
-  line-height: 50px;
+  border-radius: 9px;
+}
+.text-helper {
+  color: white;
+  font-weight: bold;
+  position: absolute;
+  top: 220px;
+  left: 20px;
 }
