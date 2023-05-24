@@ -144,11 +144,12 @@ const ListItem = (actor, img, target) => {
   let playerId;
   let playerRef;
   let playersIndex = [];
+
   //character info for dom
   let players = {};
   let selectionLock;
+
   //Button ref
-  //const playerColorButton = document.querySelector("#player-color");
   let dragonClick;
   let playerClicks = [];
   const notification = document.querySelector("#notification");
@@ -166,7 +167,6 @@ const ListItem = (actor, img, target) => {
   let musicEl = document.querySelector("#music-btn");
   let actionListHTML = document.querySelector("#action_list");
 
-  const diceBtnEl = document.querySelector("#dice-btn");
   function handleArrowPress(xChange = 0, yChange = 0) {
     if (selectionLock) {
       return;
@@ -178,7 +178,6 @@ const ListItem = (actor, img, target) => {
           let highestIndexPlayer = playersIndex.sort()[playersIndex.length - 1];
           selectionHook.selectionIndex = highestIndexPlayer + 1;
         } else {
-          //if (playersIndex[selectionHook.selectionIndex - 1] == undefined) {
           let tempArr = playersIndex.sort();
           let currIndex = playersIndex.findIndex(getIndexOf);
           function getIndexOf(value) {
@@ -233,8 +232,6 @@ const ListItem = (actor, img, target) => {
       }
     }
 
-    //selectionHook.selectionIndex =
-    //selectionHook.selectionIndex % (numberOfPlayersHook.numberOfPlayers + 1);
     if (selectionHook.selectionIndex == -0) {
       //selectionIndex = 0;
     }
@@ -346,9 +343,6 @@ const ListItem = (actor, img, target) => {
         playerTurnText.querySelector(".turn-text").innerText =
           activePlayerName + "'s turn";
       }
-      //load data make it into object array with actor, action and target
-
-      //add thing to list
     });
 
     let currentPercent;
@@ -357,29 +351,6 @@ const ListItem = (actor, img, target) => {
       currentPercent = Math.floor(Math.random() * 6) + 1;
       diceBtnOl.src = `/images/${currentPercent}.png`;
     }
-
-    // var showPercent = window.setInterval(function () {
-    //   if (currentPercent < 6) {
-    //     currentPercent += 1;
-    //   } else {
-    //     currentPercent = 1;
-    //   }
-    //   var result = "";
-    //   if (currentPercent == 1) {
-    //     result = "⚀";
-    //   } else if (currentPercent == 2) {
-    //     result = "⚁";
-    //   } else if (currentPercent == 3) {
-    //     result = "⚂";
-    //   } else if (currentPercent == 4) {
-    //     result = "⚃";
-    //   } else if (currentPercent == 5) {
-    //     result = "⚄";
-    //   } else if (currentPercent == 6) {
-    //     result = "⚅";
-    //   }
-    //   diceBtnOl.innerText = `${result}`;
-    // }, 30);
 
     gameRef.on("value", (snap) => {
       snap.forEach((child) => {
@@ -450,14 +421,7 @@ const ListItem = (actor, img, target) => {
             gameRef.child(key).remove();
           } catch (e) {}
         });
-        //when you are alone and want action list things
-        // let listEl = "";
-        // for (let i = 0; i < actionList.length; i++) {
-        //   console.log("ALI add", i);
-        //   let temp = actionList[i].split(",");
-        //   listEl += ListItem(temp[0], `/images/${temp[1]}.png`, temp[2]);
-        // }
-        // actionListHTML.innerHTML = listEl;
+
         console.log("AL when show: ", actionList);
       }
       bosshealBtn.disabled = false;
@@ -490,12 +454,6 @@ const ListItem = (actor, img, target) => {
       dragonElement.setAttribute("data-direction", characterState.direction);
       dragonElement.setAttribute("id", "dundrian");
       dragonElement.style.transform = `translate3d(${left}, ${top}, 0)`;
-
-      //players[key]
-      //console.log("dragon = players[key]", dragon);
-      //console.log("sel index", selectionIndex);
-      //player el
-      //console.log("dragonEL = player EL", dragonElement);
 
       dragonElement.innerHTML = `
         <div  class="grid-cell-dragon"></div>
@@ -1203,6 +1161,7 @@ const ListItem = (actor, img, target) => {
                 .child("hp")
                 .set(players[playerId].hp);
             }
+            //if player dies remove player from the order
             if (newHp <= 0) {
               numberOfPlayersHook.numberOfPlayers--;
               //remove from index here
@@ -1252,7 +1211,6 @@ const ListItem = (actor, img, target) => {
             }
           }
         }
-        //if action parry add logic later
       });
       if (myPlayerIndex - 1 == playersIndex[playersIndex.length - 1]) {
         //new player after full round end
