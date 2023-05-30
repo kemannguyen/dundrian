@@ -23,11 +23,13 @@ const musicBtn = document.getElementById("music-btn");
 const diceBtn = document.getElementById("dice-btn");
 const diceBtnOl = document.getElementById("dice-btn-outline");
 
+const playerNameBtn = document.getElementById("player-name-btn");
 //firebase references
 let dragonRef2;
 
 //hud
 const waitText = document.getElementById("wait_text");
+const selectionArrow = document.getElementById("select-arrow");
 
 const playerColors = [
   "blue",
@@ -75,12 +77,8 @@ Object.defineProperty(diceHook, "diceStop", {
   },
   set: function (newValue) {
     diceStop = newValue; // Run the function every time valueA changes
-    diceFunc();
   },
 });
-function diceFunc() {
-  console.log("TEST", diceHook.diceStop);
-}
 // Tracks when selection index change
 let selectionHook = {};
 Object.defineProperty(selectionHook, "selectionIndex", {
@@ -112,6 +110,9 @@ function selectionFunction() {
       healBtn.style.opacity = 0.8;
     }
   }
+  var pos = setPosition(selectionHook.selectionIndex);
+  selectionArrow.style.left = 43 * pos.x - arrowXOffset + "px";
+  selectionArrow.style.top = 43 * pos.y + arrowYOffset + "px";
 }
 
 //Tracks when numberOfPlayers change
@@ -122,13 +123,8 @@ Object.defineProperty(numberOfPlayersHook, "numberOfPlayers", {
   },
   set: function (newValue) {
     numberOfPlayers = newValue; // Run the function every time valueA changes
-    numberOfPlayerFunction();
   },
 });
-
-function numberOfPlayerFunction() {
-  console.log("change player num", numberOfPlayersHook.numberOfPlayers);
-}
 
 const ListItem = (actor, img, target) => {
   return `
@@ -157,7 +153,7 @@ const ListItem = (actor, img, target) => {
 
   //dom elements
   let playerElements = {};
-  let selectionArrow = document.getElementById("select-arrow");
+
   let dragonSelection = document.getElementById("dragon-select");
 
   const gameContainer = document.querySelector(".game-container");
@@ -171,11 +167,11 @@ const ListItem = (actor, img, target) => {
     if (selectionLock) {
       return;
     }
-    oldSelectIndex = selectionHook.selectionIndex;
+    let lowestIndexPlayer = playersIndex.sort()[0];
+    let highestIndexPlayer = playersIndex.sort()[playersIndex.length - 1];
     if (yChange == -1) {
       if (playersIndex.includes(selectionHook.selectionIndex - 1)) {
-        if (selectionHook.selectionIndex == 1) {
-          let highestIndexPlayer = playersIndex.sort()[playersIndex.length - 1];
+        if (selectionHook.selectionIndex == lowestIndexPlayer + 1) {
           selectionHook.selectionIndex = highestIndexPlayer + 1;
         } else {
           let tempArr = playersIndex.sort();
@@ -188,13 +184,17 @@ const ListItem = (actor, img, target) => {
       }
     }
     if (yChange == 1) {
+      console.log(selectionHook.selectionIndex);
       if (playersIndex.includes(selectionHook.selectionIndex - 1)) {
-        if (playersIndex[selectionHook.selectionIndex] == undefined) {
-          let lowestIndexPlayer = playersIndex.sort()[0];
+        if (selectionHook.selectionIndex == highestIndexPlayer + 1) {
           selectionHook.selectionIndex = lowestIndexPlayer + 1;
         } else {
-          selectionHook.selectionIndex =
-            playersIndex[selectionHook.selectionIndex] + 1;
+          let tempArr = playersIndex.sort();
+          let currIndex = playersIndex.findIndex(getIndexOf);
+          function getIndexOf(value) {
+            return value == selectionHook.selectionIndex;
+          }
+          selectionHook.selectionIndex = tempArr[currIndex] + 1;
         }
       }
     }
@@ -246,8 +246,6 @@ const ListItem = (actor, img, target) => {
 
     //players[playerId].hp = selectionIndex;
 
-    selectionArrow.style.left = 43 * xPos - arrowXOffset + "px";
-    selectionArrow.style.top = 43 * yPos + arrowYOffset + "px";
     playerRef.set(players[playerId]);
   }
 
@@ -295,6 +293,8 @@ const ListItem = (actor, img, target) => {
       `;
 
       gameContainer.appendChild(nameTag);
+
+      //Player name and face
       nameTag.querySelector(".profile-name").innerText = snapshot
         .child("name")
         .val();
@@ -305,6 +305,8 @@ const ListItem = (actor, img, target) => {
           "profile-ring-" + snapshot.child("color").val() + " grid-cell-profile"
         );
       nameTag.setAttribute("data-color", snapshot.child("color").val());
+
+      //role text
       roleText.innerHTML = `
          <span class="role-text" style="color:white"></span>
       `;
@@ -313,6 +315,7 @@ const ListItem = (actor, img, target) => {
         "role: " + snapshot.child("role").val();
     });
 
+    //confirm and undo buttons after action
     let confirmActionsBtn = document.createElement("div");
     confirmActionsBtn.classList.add("action_btns");
     confirmActionsBtn.innerHTML = `
@@ -362,7 +365,7 @@ const ListItem = (actor, img, target) => {
           let data = string.split(":");
           let action = data[0];
           let target = data[1];
-          //console.log("child: fake action", action + " who?: " + target);
+          //show fake action too all
           var actionItem;
           try {
             if (target != "dundrian") {
@@ -374,23 +377,15 @@ const ListItem = (actor, img, target) => {
             }
           } catch (e) {}
           if (actionList.includes(actionItem)) {
-            console.log("already in", actionList);
           } else if (target != undefined && action != undefined) {
-            console.log("ADDED ACTION");
             actionList.push(actionItem);
-          } else {
-            console.log("debug", target);
-            console.log("debug", action);
           }
         }
         //console.log(actionList);
       });
       if (actionList != undefined) {
-        console.log("AL LENG", actionList.length);
-        console.log("??????", actionList);
         let listEl = "";
         for (let i = 0; i < actionList.length; i++) {
-          console.log("ALI add", i);
           let temp = actionList[i].split(",");
           listEl += ListItem(temp[0], `/images/${temp[1]}.png`, temp[2]);
         }
@@ -435,8 +430,7 @@ const ListItem = (actor, img, target) => {
       actionList.length = 0;
       actionList = [];
       actionListHTML.innerHTML = "";
-      console.log("AL cleared", actionList);
-      console.log("AL TEST", actionList.length);
+      selectionHook.selectionIndex = 0;
     });
 
     const dragonElement = document.createElement("div");
@@ -444,6 +438,7 @@ const ListItem = (actor, img, target) => {
 
     let dragon;
 
+    //creates the dragon and updates the visuals
     dragonRef.on("value", async (snapshot) => {
       dragon = await snapshot.val();
 
@@ -464,7 +459,7 @@ const ListItem = (actor, img, target) => {
           <span class="Character_hp"></span>
         </div>
       `;
-
+      console.log("he");
       dragonElement.querySelector(".Character_name").innerText = dragon.name;
       dragonElement.querySelector(".Character_hp").innerText = dragon.hp;
       dragonElement.setAttribute("data-direction", dragon.direction);
@@ -478,9 +473,6 @@ const ListItem = (actor, img, target) => {
           return;
         }
         //DRAGON LOGIC
-        const pos = setPosition(0);
-        selectionArrow.style.left = 43 * pos.x - arrowXOffset + "px";
-        selectionArrow.style.top = 43 * pos.y + arrowYOffset + "px";
         selectionHook.selectionIndex = 0;
       });
     });
@@ -490,7 +482,6 @@ const ListItem = (actor, img, target) => {
       gameRef.child("phase").on("value", (snapshot) => {
         if (snapshot.val() == "action" && snap.val() != myPlayerIndex - 1) {
           textHelper.innerText = "";
-          console.log("RETURNED PT");
         } else if (
           snap.val() == myPlayerIndex - 1 &&
           snapshot.val() == "action"
@@ -518,8 +509,6 @@ const ListItem = (actor, img, target) => {
                   let data = string.split(":");
                   let action = data[0];
                   let target = data[1];
-                  console.log("AAA", action);
-                  console.log("BBB", target);
                   if (action == null && BBB == undefined) {
                     return;
                   }
@@ -546,49 +535,72 @@ const ListItem = (actor, img, target) => {
       });
     });
 
+    async function waitForSnapshot() {
+      var res;
+      var snapshot = await allPlayersRef.once("value");
+
+      res = snapshot.val();
+
+      return res;
+    }
+
     //runs when a change occurs in the DB
     allPlayersRef.on("value", async (snapshot) => {
-      players = (await snapshot.val()) || {};
       dragonRef.child("start").on("value", async (snap) => {
         if ((await snap.val()) == false) {
           //console.log("ONLY ONCEEE start in allref", snap.val());
           numberOfPlayersHook.numberOfPlayers = snapshot.numChildren();
+          selectionHook.selectionIndex = 0;
         }
       });
-      Object.keys(players).forEach((key) => {
-        if (!playersIndex.includes(players[key].index) && players[key].hp > 0) {
-          playersIndex.push(players[key].index);
+      players = await waitForSnapshot();
+      setTimeout(() => {
+        while (players == null) {
+          console.log("123");
         }
-        const characterState = players[key];
-        try {
-          let el = playerElements[key];
-          // Now update the DOM
-          el.querySelector(".Character_name").innerText = characterState.name;
-          el.querySelector(".Character_hp").innerText = characterState.hp;
-          el.setAttribute("data-color", characterState.color);
-
-          const left = 16 * characterState.x + "px";
-          const top = 16 * characterState.y - 4 + "px";
-
-          el.style.transform = `translate3d(${left}, ${top}, 0)`;
-          if (players[key].hp <= 0) {
-            el.classList.add("disabled");
-            console.log("dead", el);
-            gameRef.child(key).remove();
-            let modifiedPlayersIndex = playersIndex.filter(
-              (e) => e !== players[key].index
-            );
-            playersIndex.length = 0;
-            playersIndex = [...modifiedPlayersIndex];
-            if (numberOfPlayersHook.numberOfPlayers == 0) {
-              dragonRef.child("start").set(false);
-            }
+      }, 3000);
+      try {
+        console.log("try", players);
+        Object.keys(players).forEach((key) => {
+          if (
+            !playersIndex.includes(players[key].index) &&
+            players[key].hp > 0
+          ) {
+            playersIndex.push(players[key].index);
           }
-        } catch (e) {}
+          const characterState = players[key];
+          try {
+            let el = playerElements[key];
+            // Now update the DOM
+            el.querySelector(".Character_name").innerText = characterState.name;
+            el.querySelector(".Character_hp").innerText = characterState.hp;
+            el.setAttribute("data-color", characterState.color);
+
+            const left = 16 * characterState.x + "px";
+            const top = 16 * characterState.y - 4 + "px";
+
+            el.style.transform = `translate3d(${left}, ${top}, 0)`;
+            //player gets killed
+            if (players[key].hp <= 0) {
+              el.classList.add("disabled");
+              var playerImg = el.querySelector(".img_player");
+              playerImg.setAttribute("src", "images/shadow.png");
+              gameRef.child(key).remove();
+              let modifiedPlayersIndex = playersIndex.filter(
+                (e) => e !== players[key].index
+              );
+              playersIndex.length = 0;
+              playersIndex = [...modifiedPlayersIndex];
+              selectionHook.selectionIndex = 0;
+              if (numberOfPlayersHook.numberOfPlayers == 0) {
+                dragonRef.child("start").set(false);
+              }
+            }
+          } catch (e) {}
+        });
 
         //activates buttons when its your turn
         gameRef.on("value", (snapshot) => {
-          console.log(snapshot.child("playerTurn").val());
           if (snapshot.child("playerTurn").val() != myPlayerIndex - 1) {
             yourTurn = false;
             attackBtn.hidden = true;
@@ -603,6 +615,7 @@ const ListItem = (actor, img, target) => {
               yourTurn = true;
               let result = snapshot.val();
               if (result == "action") {
+                diceHook.diceStop = true;
                 diceBtn.hidden = true;
                 diceBtnOl.hidden = true;
                 attackBtn.hidden = false;
@@ -642,7 +655,7 @@ const ListItem = (actor, img, target) => {
             );
           }
         }
-      });
+      } catch (e) {}
     });
 
     //runs when a new node is added to the tree in the DB
@@ -695,9 +708,6 @@ const ListItem = (actor, img, target) => {
             Object.keys(players).forEach((key) => {
               let el = playerElements[key];
               if (e.currentTarget.style.transform == el.style.transform) {
-                const pos = setPosition(players[key].index + 1);
-                selectionArrow.style.left = 43 * pos.x - arrowXOffset + "px";
-                selectionArrow.style.top = 43 * pos.y + arrowYOffset + "px";
                 selectionHook.selectionIndex = players[key].index + 1;
               }
             });
@@ -732,6 +742,9 @@ const ListItem = (actor, img, target) => {
       setTimeout(function () {
         notification.className = "notification-hide";
       }, 2000);
+      if (removedKey == playerId) {
+        playerRef.remove();
+      }
     });
 
     //Updates player name with text input
@@ -751,16 +764,14 @@ const ListItem = (actor, img, target) => {
     dragonRef.child("start").on("value", async (snapshot) => {
       if (await snapshot.val()) {
         playersIndex.sort();
-        //console.log("START");
-        let players2 = {};
-        const allPlayersRef2 = firebase.database().ref("players");
-        allPlayersRef2.on("value", (snapshot) => {
-          players2 = snapshot.val();
+        console.log("START");
+        allPlayersRef.on("value", async (snapshot) => {
+          players = await snapshot.val();
         });
 
         //console.log("before super");
         //updates player hp
-        Object.keys(players2).forEach((key) => {
+        Object.keys(players).forEach((key) => {
           //console.log("SUPER");
           let el = document.querySelector(`#${key}`);
 
@@ -823,9 +834,6 @@ const ListItem = (actor, img, target) => {
         bosshealBtn.hidden = true;
         activateRoleBtn.hidden = true;
         dragonSelection.hidden = true;
-        Object.keys(players).forEach((key) => {
-          allPlayersRef.child(key).child("role").set("???");
-        });
         waitText.hidden = false;
         gameRef.remove();
       }
@@ -1065,6 +1073,10 @@ const ListItem = (actor, img, target) => {
       parryBtn.style.opacity = 0.8;
     });
 
+    playerNameBtn.addEventListener("click", () => {
+      console.log(players);
+    });
+
     musicBtn.addEventListener("click", () => {
       if (!audio.paused) {
         audio.pause();
@@ -1074,6 +1086,7 @@ const ListItem = (actor, img, target) => {
         musicEl.setAttribute("src", "/images/music_on.png");
       }
     });
+
     diceBtn.addEventListener("click", () => {
       diceHook.diceStop = true;
       diceThrowFunc();
@@ -1081,20 +1094,14 @@ const ListItem = (actor, img, target) => {
         dicePhase();
       }, 3000);
     });
+
+    //roll animation
     window.setInterval(function () {
       if (diceHook.diceStop == false && yourTurn) {
         diceThrowFunc();
-        console.log("1");
       }
     }, 50);
 
-    async function sleep(milliseconds) {
-      const date = Date.now();
-      let currentDate = null;
-      do {
-        currentDate = Date.now();
-      } while (currentDate - date < milliseconds);
-    }
     function dicePhase() {
       diceThrow = currentPercent;
       console.log("DICE", diceThrow);

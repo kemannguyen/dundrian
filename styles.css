@@ -274,6 +274,7 @@ button.game_btn {
   width: 30px;
   height: 30px;
   object-fit: cover;
+  z-index: 20 !important;
 }
 
 .img_profile {
@@ -521,7 +522,6 @@ button.game_btn {
 }
 .disabled {
   pointer-events: none;
-  background-color: red;
 }
 .dice {
   border-radius: 9px;
