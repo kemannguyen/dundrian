@@ -1,2 +1,2 @@
 # dundrian
-Run it by right clicking on index, run by test server
+Run it by right clicking on index, run with live server
